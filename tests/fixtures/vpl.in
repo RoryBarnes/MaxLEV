@@ -1,0 +1,12 @@
+# Test VPlanet input file for vmle tests
+sSystemName    test_system
+iVerbose       0
+bOverwrite     1
+saBodyFiles    star.in
+sUnitMass      solar
+sUnitLength    aU
+sUnitTime      YEARS
+sUnitAngle     d
+bDoForward     1
+dStopTime      1.0e9
+dOutputTime    1.0e6
