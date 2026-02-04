@@ -1,5 +1,5 @@
 """
-Unit handling utilities for vmle.
+Unit handling utilities for MaxLEV.
 
 Parses unit strings and converts them to astropy units for use with vplanet_inference.
 """

@@ -1,4 +1,4 @@
-"""Output generation for vmle."""
+"""Output generation for MaxLEV."""
 
 import numpy as np
 import matplotlib.pyplot as plt

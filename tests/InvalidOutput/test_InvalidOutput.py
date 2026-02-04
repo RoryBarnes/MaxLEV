@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from vmle.config import VMLEConfig
+from maxlev.config import MaxLEVConfig
 from tests.test_utils import FIXTURES_PATH, VPLANET_EXECUTABLE
 
 
@@ -53,7 +53,7 @@ def test_invalid_output_parameter():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         assert len(errors) > 0, "Expected validation errors for invalid output parameter"
@@ -111,7 +111,7 @@ def test_invalid_output_in_derived_observable():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         assert len(errors) > 0, "Expected validation errors for invalid output in expression"
@@ -167,7 +167,7 @@ def test_valid_output_passes():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         # Filter for output-specific errors

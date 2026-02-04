@@ -1,6 +1,6 @@
 # Test Fixtures
 
-Minimal VPlanet input files for testing vmle.
+Minimal VPlanet input files for testing MaxLEV.
 
 ## Files
 
@@ -56,7 +56,7 @@ The `star.in` file includes `saOutputOrder` to test:
 - Invalid outputs (Mass - not in list) ✗
 - Observable expressions referencing outputs
 
-This is critical for validation tests to verify vmle correctly checks that requested outputs will actually be printed by VPlanet.
+This is critical for validation tests to verify MaxLEV correctly checks that requested outputs will actually be printed by VPlanet.
 
 ## Modification
 

@@ -1,4 +1,4 @@
-"""Configuration loading and validation for vmle."""
+"""Configuration loading and validation for MaxLEV."""
 
 import json
 from dataclasses import dataclass
@@ -64,7 +64,7 @@ class ObservableConfig:
 
 
 @dataclass
-class VMLEConfig:
+class MaxLEVConfig:
     """Main configuration container."""
     name: str
     vplanet: Dict[str, Any]
@@ -76,14 +76,14 @@ class VMLEConfig:
     output_settings: Dict[str, Any]
 
     @classmethod
-    def from_json(cls, filepath: str) -> 'VMLEConfig':
+    def from_json(cls, filepath: str) -> 'MaxLEVConfig':
         """Load configuration from JSON file."""
         with open(filepath, 'r') as f:
             data = json.load(f)
         return cls._from_dict(data)
 
     @classmethod
-    def _from_dict(cls, data: dict) -> 'VMLEConfig':
+    def _from_dict(cls, data: dict) -> 'MaxLEVConfig':
         """Parse configuration dictionary."""
         parameters = [ParameterConfig(
             name=p['name'],
@@ -106,7 +106,7 @@ class VMLEConfig:
         ) for obs in data.get('observables', [])]
 
         return cls(
-            name=data.get('name', 'vmle_run'),
+            name=data.get('name', 'maxlev_run'),
             vplanet=data.get('vplanet', {}),
             parameters=parameters,
             outputs=outputs,

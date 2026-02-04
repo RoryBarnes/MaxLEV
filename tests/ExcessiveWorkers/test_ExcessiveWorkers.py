@@ -10,8 +10,8 @@ import multiprocessing
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from vmle.config import VMLEConfig
-from vmle.optimizer import Optimizer
+from maxlev.config import MaxLEVConfig
+from maxlev.optimizer import Optimizer
 import numpy as np
 
 
@@ -69,7 +69,7 @@ def test_workers_exceeds_cpu_count():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
 
         # Configuration should load without errors
         assert config.optimizer['de_settings']['workers'] == excessive_workers

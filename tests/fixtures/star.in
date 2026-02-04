@@ -1,4 +1,4 @@
-# Test star input file for vmle tests
+# Test star input file for MaxLEV tests
 sName          star
 saModules      stellar
 dMass          0.2

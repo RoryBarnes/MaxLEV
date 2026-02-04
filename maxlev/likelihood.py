@@ -1,4 +1,4 @@
-"""Likelihood models for vmle."""
+"""Likelihood models for MaxLEV."""
 
 import numpy as np
 from typing import Dict

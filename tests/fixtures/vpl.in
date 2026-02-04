@@ -1,4 +1,4 @@
-# Test VPlanet input file for vmle tests
+# Test VPlanet input file for MaxLEV tests
 sSystemName    test_system
 iVerbose       0
 bOverwrite     1

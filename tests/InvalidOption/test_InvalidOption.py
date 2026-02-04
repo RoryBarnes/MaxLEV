@@ -9,7 +9,7 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from vmle.config import VMLEConfig
+from maxlev.config import MaxLEVConfig
 from tests.test_utils import FIXTURES_PATH, VPLANET_EXECUTABLE
 
 
@@ -57,7 +57,7 @@ def test_invalid_vplanet_option():
 
     try:
         # Load configuration
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
 
         # Validate - should return errors
         errors = config.validate()
@@ -130,7 +130,7 @@ def test_multiple_invalid_options():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         # Should catch both invalid parameters
@@ -192,7 +192,7 @@ def test_typo_gets_suggestions():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         assert len(errors) > 0, "Expected validation error for typo 'dMas'"
@@ -255,7 +255,7 @@ def test_valid_option_passes():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         # Filter out errors that aren't about parameter names

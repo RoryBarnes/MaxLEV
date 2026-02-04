@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from vmle.likelihood import AsymmetricGaussianLikelihood, GaussianLikelihood
-from vmle.config import ObservableConfig
+from maxlev.likelihood import AsymmetricGaussianLikelihood, GaussianLikelihood
+from maxlev.config import ObservableConfig
 
 
 def asymmetric_gaussian_pdf(x, mu, sigma_lower, sigma_upper):

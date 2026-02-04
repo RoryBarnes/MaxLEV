@@ -1,4 +1,4 @@
-"""Command-line interface for vmle."""
+"""Command-line interface for MaxLEV."""
 
 import argparse
 import sys
@@ -12,10 +12,10 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  vmle config.json              Run MLE with JSON config
-  vmle config.json --validate   Validate config without running
-  vmle config.json --verbose    Enable verbose output
-  vmle config.json --workers 4  Use 4 parallel workers
+  maxlev config.json              Run MLE with JSON config
+  maxlev config.json --validate   Validate config without running
+  maxlev config.json --verbose    Enable verbose output
+  maxlev config.json --workers 4  Use 4 parallel workers
         """
     )
 
@@ -44,14 +44,14 @@ Examples:
 
 
 def main():
-    """Main entry point for vmle CLI."""
+    """Main entry point for MaxLEV CLI."""
     args = parse_args()
 
     # Import here to allow --help without full imports
-    from .config import VMLEConfig
+    from .config import MaxLEVConfig
     from .likelihood import create_likelihood
     from .observables import ObservableComputer
-    from .model import VMLEModel
+    from .model import MaxLEVModel
     from .optimizer import Optimizer
     from .output import save_results, plot_evolution
 
@@ -70,7 +70,7 @@ def main():
         print(f"Error: Configuration file must be JSON format")
         sys.exit(1)
 
-    config = VMLEConfig.from_json(str(config_path))
+    config = MaxLEVConfig.from_json(str(config_path))
 
     print(f"  Name: {config.name}")
     print(f"  Parameters: {len(config.parameters)}")
@@ -117,7 +117,7 @@ def main():
 
     likelihood_model = create_likelihood(config.likelihood, config.observables)
     observable_computer = ObservableComputer(output_names, config.observables)
-    model = VMLEModel(config, likelihood_model, observable_computer)
+    model = MaxLEVModel(config, likelihood_model, observable_computer)
     print("[OK] VPlanet model initialized")
 
     # Run optimization

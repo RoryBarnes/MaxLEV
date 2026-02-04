@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from vmle.config import VMLEConfig
+from maxlev.config import MaxLEVConfig
 from tests.test_utils import FIXTURES_PATH, VPLANET_EXECUTABLE, FIXTURES_DIR
 
 
@@ -59,7 +59,7 @@ def test_output_not_in_saOutputOrder():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         # Should have error about Mass not in saOutputOrder
@@ -124,7 +124,7 @@ def test_valid_outputs_in_saOutputOrder():
         config_path = f.name
 
     try:
-        config = VMLEConfig.from_json(config_path)
+        config = MaxLEVConfig.from_json(config_path)
         errors = config.validate()
 
         # Should not have saOutputOrder errors for these outputs

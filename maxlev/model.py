@@ -6,7 +6,7 @@ from typing import Optional
 from .units import build_inparams_dict, build_outparams_dict
 
 
-class VMLEModel:
+class MaxLEVModel:
     """Wrapper around vplanet_inference.VplanetModel for MLE."""
 
     def __init__(self, config, likelihood_model, observable_computer):
@@ -14,7 +14,7 @@ class VMLEModel:
         Initialize VPlanet model from configuration.
 
         Args:
-            config: VMLEConfig object
+            config: MaxLEVConfig object
             likelihood_model: LikelihoodModel instance
             observable_computer: ObservableComputer instance
         """

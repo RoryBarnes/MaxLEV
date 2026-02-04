@@ -1,4 +1,4 @@
-# vmle - VPlanet Maximum Likelihood Estimation
+# MaxLEV - Maximum Likelihood Estimation for VPLanet 
 
 A general-purpose MLE tool for VPlanet stellar evolution models with comprehensive input validation.
 
@@ -21,8 +21,8 @@ The package requires:
 - vplanet_inference
 
 ```bash
-cd /Users/rory/src/vmle
-# No installation needed - run directly with python vmle.py
+cd /Users/rory/src/MaxLEV
+# No installation needed - run directly with python maxlev.py
 ```
 
 ## Usage
@@ -30,19 +30,19 @@ cd /Users/rory/src/vmle
 ### Basic Usage
 
 ```bash
-python vmle.py config.json
+python maxlev.py config.json
 ```
 
 ### Validation Only
 
 ```bash
-python vmle.py config.json --validate
+python maxlev.py config.json --validate
 ```
 
 ### With Options
 
 ```bash
-python vmle.py config.json --workers 4 --maxiter 2000 --seed 123
+python maxlev.py config.json --workers 4 --maxiter 2000 --seed 123
 ```
 
 ### Command-Line Options
@@ -174,7 +174,7 @@ See [gj1132_ribas_test.json](gj1132_ribas_test.json:1-0) for a complete example.
 
 ## Validation Features
 
-vmle performs comprehensive validation:
+MaxLEV performs comprehensive validation:
 
 1. **Parameter Name Validation**: Checks against VPlanet's valid input options
 2. **Output Parameter Validation**: Checks against VPlanet's valid output parameters
@@ -192,7 +192,7 @@ Validation errors include:
 To reproduce MaxLikelihoodRibas.py results:
 
 ```bash
-python vmle.py gj1132_ribas_test.json
+python maxlev.py gj1132_ribas_test.json
 ```
 
 This will:
@@ -206,7 +206,7 @@ This will:
 For faster optimization:
 
 ```bash
-python vmle.py config.json --workers 4
+python maxlev.py config.json --workers 4
 ```
 
 **Note**: With `workers > 1`, results will not be exactly reproducible even with the same seed, but should converge to similar values.
@@ -237,7 +237,7 @@ Check `saBodyFiles` in your `vpl.in` file to see valid body names.
 - **Thread Safety**: Uses vplanet_inference's random temp directories for parallel runs
 - **Error Handling**: Returns penalty value (1e10) for failed VPlanet runs
 
-## Files Created
+## Files
 
 - `validation.py`: VPlanet option validation
 - `config.py`: JSON configuration loading
@@ -248,7 +248,7 @@ Check `saBodyFiles` in your `vpl.in` file to see valid body names.
 - `optimizer.py`: Optimization algorithms
 - `output.py`: Results and plotting
 - `cli.py`: Command-line interface
-- `vmle.py`: Main entry point
+- `maxlev.py`: Main entry point
 
 ## References
 
