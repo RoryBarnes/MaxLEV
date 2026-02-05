@@ -1,0 +1,49 @@
+name: pip-install
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  install:
+    name: "Install on py${{ matrix.python-version }} / ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy scipy astropy matplotlib
+          python -m pip install vplanet vplanet_inference
+
+      - name: Verify imports
+        run: |
+          python -c "from maxlev import config; print('config OK')"
+          python -c "from maxlev import likelihood; print('likelihood OK')"
+          python -c "from maxlev import observables; print('observables OK')"
+          python -c "from maxlev import optimizer; print('optimizer OK')"
+          python -c "from maxlev import output; print('output OK')"
+          python -c "from maxlev import units; print('units OK')"
+          python -c "from maxlev import validation; print('validation OK')"
+
+      - name: Test CLI help
+        run: |
+          python maxlev.py --help
+
+      - name: Test validation mode
+        run: |
+          python maxlev.py examples/EarthInterior/earthInterior.json --validate

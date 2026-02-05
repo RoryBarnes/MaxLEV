@@ -3,3 +3,18 @@ __pycache__/
 .pytest_cache/
 *_maxlev.in
 docs/_build/
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
+junit/
+
+# IDE
+.vscode/
+.idea/
+
+# Distribution
+dist/
+build/
+*.egg-info/

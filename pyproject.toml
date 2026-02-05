@@ -1,0 +1,59 @@
+[project]
+name = "maxlev"
+version = "1.0.0"
+description = "Maximum Likelihood Estimation for VPLanet"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Rory Barnes", email = "rory@astro.washington.edu"}
+]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "scipy",
+    "astropy",
+    "matplotlib",
+    "vplanet",
+    "vplanet_inference",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+docs = [
+    "sphinx",
+    "sphinx_rtd_theme",
+]
+
+[project.urls]
+Homepage = "https://github.com/RoryBarnes/MaxLEV"
+Documentation = "https://rorybarnes.github.io/MaxLEV"
+Repository = "https://github.com/RoryBarnes/MaxLEV"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["maxlev"]
+omit = [
+    "tests/*",
+    "docs/*",
+    "examples/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
