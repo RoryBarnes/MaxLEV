@@ -1,67 +1,25 @@
-# MaxLEV - Maximum Likelihood Estimation for VPLanet
+<p align="center">
+  <img width = "250" src="docs/VPLanetLogo.png"/>
+</p>
 
-A tool for finding maximum likelihood parameters of VPLanet simulations given observational constraints.
+<h1 align="center">MaxLEV: Maximum Likelihood Estimation for VPLanet</h1>
 
-## Features
+<p align="center">
+  <a href="https://RoryBarnes.github.io/MaxLEV/"><img src="https://img.shields.io/badge/read-the_docs-blue.svg?style=flat"></a>
+  <a href="https://github.com/RoryBarnes/MaxLEV/actions/workflows/docs.yml">
+  <img src="https://github.com/RoryBarnes/MaxLEV/actions/workflows/docs.yml/badge.svg">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg"></a>
+    <a href="https://VirtualPlanetaryLaboratory.github.io/vplanet/conduct.html"><img src="https://img.shields.io/badge/Code%20of-Conduct-7d93c7.svg"></a><br>
+  <a href="https://github.com/RoryBarnes/MaxLEV/actions/workflows/tests.yml">
+  <img src="https://github.com/RoryBarnes/MaxLEV/actions/workflows/tests.yml/badge.svg">
+  <a href="https://codecov.io/gh/RoryBarnes/MaxLEV">
+  <img src="https://codecov.io/gh/RoryBarnes/MaxLEV/branch/main/graph/badge.svg">
+  </a>
+    <img src="https://img.shields.io/badge/Python-3.9--3.12-orange.svg"></a><br>
+  <a href="https://github.com/RoryBarnes/MaxLEV/actions/workflows/pip-install.yml">
+  <img src="https://github.com/RoryBarnes/MaxLEV/actions/workflows/pip-install.yml/badge.svg">
+    <img src = "https://img.shields.io/badge/Platforms-Linux_|%20macOS-darkgreen.svg?style=flat">
+  </a>
+</p>
 
-- **JSON Configuration**: Define optimization problems with parameters, outputs, and observables
-- **VPLanet Validation**: Validates all parameters and outputs against VPLanet before running
-- **Asymmetric Uncertainties**: Supports asymmetric Gaussian likelihoods
-- **Parallelization**: Differential evolution with multiprocessing support
-- **MaxLEV Input Files**: Generates `*_maxlev.in` files with best-fit parameter values
-
-## Quick Start
-
-```bash
-# Run optimization
-python maxlev.py examples/EarthInterior/earthInterior.json
-
-# Validate configuration only
-python maxlev.py examples/EarthInterior/earthInterior.json --validate
-```
-
-## Installation
-
-```bash
-git clone https://github.com/RoryBarnes/MaxLEV.git
-pip install numpy scipy astropy vplanet vplanet_inference
-```
-
-## Documentation
-
-Full documentation is available in the [docs/](docs/) folder:
-
-- [Installation Guide](docs/install.rst)
-- [Running MaxLEV](docs/help.rst)
-- [Configuration Format](docs/config.rst)
-- [Examples](docs/examples.rst)
-
-## Example: EarthInterior
-
-The `examples/EarthInterior/` directory contains a complete example that constrains Earth's initial thermal state using the `thermint` module:
-
-- 6 optimization parameters (mantle temperature, CMB temperature, etc.)
-- 11 observational constraints (heat flow, magnetic moment, etc.)
-- Results: chi^2 = 6.08 with all observables within 1.5 sigma
-
-See the [examples documentation](docs/examples.rst) for details.
-
-## Output
-
-After optimization, MaxLEV generates:
-
-1. **Results file**: Best-fit parameters, chi^2, and residuals
-2. **MaxLEV input files**: `*_maxlev.in` files with optimized values
-
-Example output:
-```
-examples/EarthInterior/
-    earth.in           # Original template
-    earth_maxlev.in    # Generated with ML values
-earthInterior_results.txt
-```
-
-## References
-
-- Uses [vplanet_inference](https://github.com/VirtualPlanetaryLaboratory/vplanet_inference) for VPLanet integration
-- Part of the [VPLanet](https://github.com/VirtualPlanetaryLaboratory/vplanet) ecosystem
+`MaxLEV` finds the maximum likelihood estimates of [`VPLanet`](https://github.com/VirtualPlanetaryLaboratory/vplanet) model parameters given observational constraints. With `MaxLEV` you can quickly identify the best-fit initial conditions for a planetary system by comparing simulated outputs to observed values with asymmetric uncertainties. After finding the maximum likelihood solution, use [`alabi`](https://github.com/dflemin3/alabi) to obtain posterior distributions, and [`vconverge`](https://github.com/VirtualPlanetaryLaboratory/vconverge) to derive posteriors for derived quantities. [Read the docs](https://RoryBarnes.github.io/MaxLEV/) to learn how to perform maximum likelihood estimation with VPLanet.
