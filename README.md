@@ -1,14 +1,14 @@
 # MaxLEV - Maximum Likelihood Estimation for VPLanet 
 
-A general-purpose MLE tool for VPlanet stellar evolution models with comprehensive input validation.
+A general-purpose MLE tool for VPLanet stellar evolution models with comprehensive input validation.
 
 ## Features
 
 - **JSON Configuration**: Easy-to-use JSON format for defining optimization problems
-- **VPlanet Validation**: Validates all parameters, outputs, and body names against VPlanet's actual options
+- **VPLanet Validation**: Validates all parameters, outputs, and body names against VPLanet's actual options
 - **Asymmetric Uncertainties**: Supports asymmetric Gaussian likelihoods with separate lower/upper error bars
 - **Parallelization**: Differential evolution with multiprocessing support
-- **Extensible**: Works with any VPlanet problem, not just specific systems
+- **Extensible**: Works with any VPLanet problem, not just specific systems
 
 ## Installation
 
@@ -48,7 +48,7 @@ python maxlev.py config.json --workers 4 --maxiter 2000 --seed 123
 ### Command-Line Options
 
 - `--validate`: Validate configuration without running optimization
-- `--verbose, -v`: Enable verbose VPlanet output
+- `--verbose, -v`: Enable verbose VPLanet output
 - `--seed N`: Override random seed
 - `--maxiter N`: Override maximum iterations
 - `--workers N`: Override number of parallel workers (1 = serial, -1 = all CPUs)
@@ -60,7 +60,7 @@ See [gj1132_ribas_test.json](gj1132_ribas_test.json:1-0) for a complete example.
 
 ### Key Sections
 
-#### 1. VPlanet Settings
+#### 1. VPLanet Settings
 
 ```json
 {
@@ -89,7 +89,7 @@ See [gj1132_ribas_test.json](gj1132_ribas_test.json:1-0) for a complete example.
 ```
 
 **Important**:
-- Parameter names are validated against VPlanet's `-h` output
+- Parameter names are validated against VPLanet's `-h` output
 - Format: `filename.parameter` (e.g., `star.dMass`, `vpl.dStopTime`)
 - Units support: `Msun`, `Gyr`, `Lsun`, `dimensionless`, `dex(dimensionless)`, etc.
 
@@ -107,7 +107,7 @@ See [gj1132_ribas_test.json](gj1132_ribas_test.json:1-0) for a complete example.
 ```
 
 **Important**:
-- Output names are validated against VPlanet's output parameters
+- Output names are validated against VPLanet's output parameters
 - Body names are validated against `saBodyFiles` in vpl.in
 - Outputs are validated against `saOutputOrder` in the body's `.in` file
 
@@ -176,8 +176,8 @@ See [gj1132_ribas_test.json](gj1132_ribas_test.json:1-0) for a complete example.
 
 MaxLEV performs comprehensive validation:
 
-1. **Parameter Name Validation**: Checks against VPlanet's valid input options
-2. **Output Parameter Validation**: Checks against VPlanet's valid output parameters
+1. **Parameter Name Validation**: Checks against VPLanet's valid input options
+2. **Output Parameter Validation**: Checks against VPLanet's valid output parameters
 3. **Body Name Validation**: Verifies body names exist in `saBodyFiles`
 4. **saOutputOrder Validation**: Ensures requested outputs are in the body's output list
 5. **Expression Validation**: Validates derived observable expressions reference valid outputs
@@ -196,7 +196,7 @@ python maxlev.py gj1132_ribas_test.json
 ```
 
 This will:
-1. Validate all parameters and outputs against VPlanet
+1. Validate all parameters and outputs against VPLanet
 2. Run differential evolution optimization (this takes many hours!)
 3. Save results to `maxlike_results.txt`
 4. Generate evolution plot `gj1132_maxlike_evolution.pdf`
@@ -213,11 +213,11 @@ python maxlev.py config.json --workers 4
 
 ## Troubleshooting
 
-### "Invalid VPlanet parameter 'XXX'"
+### "Invalid VPLanet parameter 'XXX'"
 
-The parameter name is not recognized by VPlanet. Check:
+The parameter name is not recognized by VPLanet. Check:
 - Correct spelling (use suggestions from error message)
-- Parameter exists in VPlanet version you're using
+- Parameter exists in VPLanet version you're using
 - Run `vplanet -h` to see all valid options
 
 ### "Output 'XXX' not in saOutputOrder for body 'YYY'"
@@ -232,14 +232,14 @@ Check `saBodyFiles` in your `vpl.in` file to see valid body names.
 
 ## Implementation Details
 
-- **Alphabetical Sorting**: VPlanet outputs are sorted alphabetically by vplanet_inference
+- **Alphabetical Sorting**: VPLanet outputs are sorted alphabetically by vplanet_inference
 - **Unit Handling**: Supports `dex` units for log10-space parameters
 - **Thread Safety**: Uses vplanet_inference's random temp directories for parallel runs
-- **Error Handling**: Returns penalty value (1e10) for failed VPlanet runs
+- **Error Handling**: Returns penalty value (1e10) for failed VPLanet runs
 
 ## Files
 
-- `validation.py`: VPlanet option validation
+- `validation.py`: VPLanet option validation
 - `config.py`: JSON configuration loading
 - `units.py`: Unit string parsing
 - `likelihood.py`: Gaussian and asymmetric Gaussian likelihoods
@@ -253,5 +253,5 @@ Check `saBodyFiles` in your `vpl.in` file to see valid body names.
 ## References
 
 - Based on MaxLikelihoodRibas.py for GJ 1132
-- Uses vplanet_inference for VPlanet integration
-- Follows vplot patterns for VPlanet option validation
+- Uses vplanet_inference for VPLanet integration
+- Follows vplot patterns for VPLanet option validation

@@ -1,0 +1,40 @@
+# Earth parameters for EarthInterior example
+# Values in SI because vplanet_inference forces SI unit settings
+sName          earth          # Body name
+saModules      radheat thermint # Modules
+
+# Physical Properties
+dMass          -1.0           # Mass, negative -> Earth masses
+dRadius        -1.0           # Radius, negative -> Earth radii
+dRotPeriod     -1.0           # Rotation period, negative -> days
+dObliquity     0.41015        # Obliquity [rad] = 23.5 deg
+dRadGyra       0.5            # Radius of gyration
+
+# Orbital Properties
+dEcc           0.0167         # Eccentricity
+dSemi          -1             # Semi-major axis, negative -> AU
+
+# RADHEAT Parameters
+d40KPowerMan      -1          # 40K mantle power, negative -> Earth
+d40KPowerCore     -1          # 40K core power, negative -> Earth
+d40KPowerCrust    -1          # 40K crust power, negative -> Earth
+d232ThPowerMan    -1          # 232Th mantle power, negative -> Earth
+d232ThPowerCore   -1          # 232Th core power, negative -> Earth
+d232ThPowerCrust  -1          # 232Th crust power, negative -> Earth
+d235UPowerMan     -1          # 235U mantle power, negative -> Earth
+d235UPowerCore    -1          # 235U core power, negative -> Earth
+d235UPowerCrust   -1          # 235U crust power, negative -> Earth
+d238UPowerMan     -1          # 238U mantle power, negative -> Earth
+d238UPowerCore    -1          # 238U core power, negative -> Earth
+d238UPowerCrust   -1          # 238U crust power, negative -> Earth
+
+# THERMINT Parameters
+sCoreModel     Garcia26       # Core thermal model
+dTMan          3000           # Initial mantle temperature [K]
+dTCMB          4500           # Initial CMB temperature [K]
+dActViscMan    3e5            # Viscosity activation energy [J/mol]
+dViscJumpMan   2.40           # Viscosity ratio lower/upper mantle
+dEruptEff      0.1            # Melt eruption efficiency
+dDTChiRef      0.0            # Core liquidus depression [K]
+
+saOutputOrder  Time -TMan -TUMan -TSolUMan -TLMan -TCMB -TCore -HflowUMan -HflowMeltMan -RadPowerMan -RadPowerCore -RadPowerCrust -HflowCMB -HflowSecMan -TDotMan -TDotCore -TJumpLMan -TJumpUMan -RIC -RayleighMan -ViscUMan -ViscLMan -MeltMassFluxMan -FMeltUMan -MagMom -CoreBuoyTherm -CoreBuoyCompo -CoreBuoyTotal -MagPauseRad -BLUMan -BLLMan -RadPowerTotal -SurfEnFluxTotal # All outputs on one line for vplanet_inference compatibility

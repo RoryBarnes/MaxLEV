@@ -5,6 +5,7 @@ Parses unit strings and converts them to astropy units for use with vplanet_infe
 """
 
 import astropy.units as u
+import vplanet  # noqa: F401 - registers VPlanet custom units (sec, EMAGMOM, etc.)
 from typing import Dict
 
 

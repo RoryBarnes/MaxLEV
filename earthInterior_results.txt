@@ -1,0 +1,48 @@
+EarthInterior Maximum Likelihood Estimation
+======================================================================
+
+Maximum Likelihood Parameters:
+----------------------------------------------------------------------
+earth.dTMan                    = 3.107743e+03
+earth.dTCMB                    = 4.566381e+03
+earth.dEruptEff                = 6.523120e-02
+earth.dDTChiRef                = 8.808236e-04
+earth.dViscJumpMan             = 2.354446e+00
+earth.dActViscMan              = 3.060260e+05
+
+-ln(Likelihood) = 3.039727e+00
+chi^2           = 6.079453e+00
+
+Model Predictions:
+----------------------------------------------------------------------
+upperMantleTemperature         = 1.583259e+03 (obs: 1.587000e+03)
+  Residual: -0.110 sigma
+coreMantieBoundaryTemperature  = 3.998823e+03 (obs: 4.000000e+03)
+  Residual: -0.006 sigma
+upperMantleHeatFlow            = 3.442434e+01 (obs: 3.800000e+01)
+  Residual: -1.192 sigma
+coreMantleBoundaryHeatFlow     = 1.384699e+01 (obs: 1.100000e+01)
+  Residual: +0.474 sigma
+upperMantleViscosity           = 3.904085e+17 (obs: 2.270000e+18)
+  Residual: -0.828 sigma
+lowerMantleViscosity           = 1.084216e+18 (obs: 1.500000e+18)
+  Residual: -0.297 sigma
+upperMantleMeltFraction        = 6.349700e-02 (obs: 1.150000e-01)
+  Residual: -1.472 sigma
+mantleMeltMassFlux             = 2.169694e+06 (obs: 1.300000e+06)
+  Residual: +1.087 sigma
+innerCoreRadius                = 1.224059e+03 (obs: 1.224100e+03)
+  Residual: -0.410 sigma
+magneticMoment                 = 9.891164e-01 (obs: 1.000000e+00)
+  Residual: -0.218 sigma
+magnetopauseRadius             = 9.951833e-01 (obs: 9.996700e-01)
+  Residual: -0.292 sigma
+
+Parameter Bounds:
+----------------------------------------------------------------------
+earth.dTMan                   : [2.500000e+03, 3.500000e+03]
+earth.dTCMB                   : [4.000000e+03, 5.000000e+03]
+earth.dEruptEff               : [1.000000e-02, 1.000000e-01]
+earth.dDTChiRef               : [1.000000e-04, 1.000000e-03]
+earth.dViscJumpMan            : [1.000000e+00, 5.000000e+00]
+earth.dActViscMan             : [1.000000e+05, 5.000000e+05]

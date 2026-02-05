@@ -36,6 +36,7 @@ class OutputConfig:
     """Configuration for a VPlanet output parameter."""
     name: str
     units: str
+    conversion_factor: float = 1.0
     description: Optional[str] = None
 
 
@@ -92,7 +93,12 @@ class MaxLEVConfig:
             description=p.get('description')
         ) for p in data.get('parameters', [])]
 
-        outputs = [OutputConfig(**o) for o in data.get('outputs', [])]
+        outputs = [OutputConfig(
+            name=o['name'],
+            units=o['units'],
+            conversion_factor=o.get('conversion_factor', 1.0),
+            description=o.get('description')
+        ) for o in data.get('outputs', [])]
 
         observables = [ObservableConfig(
             name=obs['name'],
