@@ -1,8 +1,129 @@
 """Output generation for MaxLEV."""
 
+import os
+import re
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Dict, Any
+from pathlib import Path
+from typing import Dict, Any, List
+
+
+def fnGenerateMaxLEVInputFiles(daBestParams: np.ndarray, config) -> List[str]:
+    """
+    Generate *_maxlev.in files with maximum likelihood parameter values.
+
+    Args:
+        daBestParams: Array of best-fit parameter values
+        config: MaxLEVConfig object
+
+    Returns:
+        List of paths to generated files
+    """
+    sInpath = config.vplanet.get('inpath', '.')
+    listGeneratedFiles = []
+
+    # Group parameters by file
+    dictParamsByFile = {}
+    for i, param in enumerate(config.parameters):
+        sFileName = param.file_name
+        if sFileName not in dictParamsByFile:
+            dictParamsByFile[sFileName] = []
+        dictParamsByFile[sFileName].append((param.param_name, daBestParams[i]))
+
+    # Process each file that has parameters to update
+    for sFileName, listParams in dictParamsByFile.items():
+        sInputFilePath = Path(sInpath) / f"{sFileName}.in"
+        sOutputFilePath = Path(sInpath) / f"{sFileName}_maxlev.in"
+
+        if not sInputFilePath.exists():
+            print(f"  Warning: Template file not found: {sInputFilePath}")
+            continue
+
+        listOutputLines = _flistUpdateInputFile(sInputFilePath, listParams)
+        with open(sOutputFilePath, 'w') as f:
+            f.writelines(listOutputLines)
+
+        listGeneratedFiles.append(str(sOutputFilePath))
+        print(f"  [OK] Generated: {sOutputFilePath}")
+
+    return listGeneratedFiles
+
+
+def _flistUpdateInputFile(pathInputFile: Path,
+                          listParams: List[tuple]) -> List[str]:
+    """
+    Read input file and update parameter values.
+
+    Args:
+        pathInputFile: Path to template .in file
+        listParams: List of (param_name, value) tuples
+
+    Returns:
+        List of lines with updated values
+    """
+    with open(pathInputFile, 'r') as f:
+        listLines = f.readlines()
+
+    # Build dict for quick lookup
+    dictParamValues = {sName: dValue for sName, dValue in listParams}
+
+    listOutputLines = []
+    for sLine in listLines:
+        sUpdatedLine = _fsUpdateLine(sLine, dictParamValues)
+        listOutputLines.append(sUpdatedLine)
+
+    return listOutputLines
+
+
+def _fsUpdateLine(sLine: str, dictParamValues: Dict[str, float]) -> str:
+    """
+    Update a single line if it contains a parameter to replace.
+
+    Args:
+        sLine: Original line from input file
+        dictParamValues: Dict mapping parameter names to new values
+
+    Returns:
+        Updated line (or original if no match)
+    """
+    sStripped = sLine.strip()
+
+    # Skip empty lines and comments
+    if not sStripped or sStripped.startswith('#'):
+        return sLine
+
+    # Parse the line: parameter_name value [# comment]
+    # VPLanet format: dTMan 3000 # comment
+    listParts = sStripped.split()
+    if len(listParts) < 2:
+        return sLine
+
+    sParamName = listParts[0]
+
+    # Check if this parameter should be updated
+    if sParamName not in dictParamValues:
+        return sLine
+
+    dNewValue = dictParamValues[sParamName]
+
+    # Preserve the original line structure (whitespace, comments)
+    # Find where the parameter name ends and value begins
+    matchParam = re.match(r'^(\s*)(\S+)(\s+)(\S+)(.*)', sLine)
+    if not matchParam:
+        return sLine
+
+    sLeadingWhitespace = matchParam.group(1)
+    sOrigParamName = matchParam.group(2)
+    sSeparator = matchParam.group(3)
+    sRemainder = matchParam.group(5)  # Everything after value (comments, etc.)
+
+    # Format the new value appropriately
+    if abs(dNewValue) >= 1e4 or (abs(dNewValue) < 1e-3 and dNewValue != 0):
+        sNewValue = f"{dNewValue:.6e}"
+    else:
+        sNewValue = f"{dNewValue:.6f}".rstrip('0').rstrip('.')
+
+    return f"{sLeadingWhitespace}{sOrigParamName}{sSeparator}{sNewValue}{sRemainder}\n"
 
 
 def save_results(best_params: np.ndarray, best_value: float,
@@ -47,6 +168,10 @@ def save_results(best_params: np.ndarray, best_value: float,
             f.write(f"{param.name:30s}: [{param.bounds[0]:.6e}, {param.bounds[1]:.6e}]\n")
 
     print(f"\n[OK] Results saved: {filepath}")
+
+    # Generate *_maxlev.in files
+    print("\nGenerating MaxLEV input files...")
+    fnGenerateMaxLEVInputFiles(best_params, config)
 
 
 def plot_evolution(best_params: np.ndarray, config, model,
