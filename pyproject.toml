@@ -14,7 +14,7 @@ dependencies = [
     "astropy",
     "matplotlib",
     "vplanet",
-    "vplanet_inference",
+    "vplanet_inference @ git+https://github.com/jbirky/vplanet_inference.git",
 ]
 
 [project.optional-dependencies]
