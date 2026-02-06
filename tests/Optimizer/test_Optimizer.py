@@ -83,10 +83,10 @@ class TestOptimizerDifferentialEvolution:
 
     def test_de_uses_config_settings(self):
         """Test that DE uses configuration settings."""
-        call_count = [0]
+        iCallCount = [0]
 
         def counting_objective(x):
-            call_count[0] += 1
+            iCallCount[0] += 1
             return np.sum(x**2)
 
         config = {
@@ -107,7 +107,7 @@ class TestOptimizerDifferentialEvolution:
 
         opt.optimize(counting_objective, bounds, ['x1'])
 
-        assert call_count[0] > 0
+        assert iCallCount[0] > 0
 
 
 class TestOptimizerLocalMethods:
@@ -195,6 +195,141 @@ class TestOptimizerLocalMethods:
         )
 
         assert isinstance(best_params, np.ndarray)
+
+
+class TestOptimizerInitialGuess:
+    """Tests for x0 initial guess support."""
+
+    def test_default_x0_is_center_of_bounds(self):
+        """Test that default x0 is the center of bounds."""
+        opt = Optimizer({'algorithm': 'nelder-mead'})
+        bounds = np.array([[0, 10], [2, 8]])
+        daX0 = opt._fdaParseInitialGuess(bounds)
+
+        np.testing.assert_array_almost_equal(daX0, [5.0, 5.0])
+
+    def test_config_x0_overrides_default(self):
+        """Test that x0 from config overrides center of bounds."""
+        opt = Optimizer({
+            'algorithm': 'nelder-mead',
+            'x0': [1.0, 2.0]
+        })
+        bounds = np.array([[0, 10], [0, 10]])
+        daX0 = opt._fdaParseInitialGuess(bounds)
+
+        np.testing.assert_array_almost_equal(daX0, [1.0, 2.0])
+
+    def test_nelder_mead_with_x0_converges(self):
+        """Test that NM with a good x0 converges near the minimum."""
+        def quadratic(x):
+            return (x[0] - 3.0)**2 + (x[1] - 7.0)**2
+
+        config = {
+            'algorithm': 'nelder-mead',
+            'maxiter': 200,
+            'disp': False,
+            'x0': [2.9, 7.1],
+        }
+
+        opt = Optimizer(config)
+        bounds = np.array([[0, 10], [0, 10]])
+
+        best_params, best_value, info = opt.optimize(
+            quadratic, bounds, ['x1', 'x2']
+        )
+
+        assert abs(best_params[0] - 3.0) < 0.1
+        assert abs(best_params[1] - 7.0) < 0.1
+
+
+class TestOptimizerNelderMeadSettings:
+    """Tests for Nelder-Mead-specific settings."""
+
+    def test_nm_settings_adaptive(self):
+        """Test that adaptive setting is passed through."""
+        def quadratic(x):
+            return np.sum(x**2)
+
+        config = {
+            'algorithm': 'nelder-mead',
+            'maxiter': 50,
+            'disp': False,
+            'nm_settings': {'adaptive': True},
+        }
+
+        opt = Optimizer(config)
+        bounds = np.array([[-1, 1], [-1, 1]])
+
+        best_params, best_value, info = opt.optimize(
+            quadratic, bounds, ['x1', 'x2']
+        )
+
+        assert isinstance(best_params, np.ndarray)
+        assert best_value < 0.1
+
+    def test_nm_settings_tolerances(self):
+        """Test that xatol and fatol settings are passed through."""
+        def quadratic(x):
+            return (x[0] - 0.5)**2
+
+        config = {
+            'algorithm': 'nelder-mead',
+            'maxiter': 500,
+            'disp': False,
+            'nm_settings': {
+                'xatol': 1e-8,
+                'fatol': 1e-8,
+            },
+        }
+
+        opt = Optimizer(config)
+        bounds = np.array([[0, 1]])
+
+        best_params, best_value, info = opt.optimize(
+            quadratic, bounds, ['x1']
+        )
+
+        assert abs(best_params[0] - 0.5) < 1e-4
+
+    def test_nm_builds_options_from_settings(self):
+        """Test that _fdictBuildNelderMeadOptions extracts settings."""
+        config = {
+            'algorithm': 'nelder-mead',
+            'nm_settings': {
+                'adaptive': True,
+                'xatol': 1e-6,
+                'fatol': 1e-7,
+            },
+        }
+
+        opt = Optimizer(config)
+        dictOptions = opt._fdictBuildNelderMeadOptions()
+
+        assert dictOptions['adaptive'] is True
+        assert dictOptions['xatol'] == 1e-6
+        assert dictOptions['fatol'] == 1e-7
+
+    def test_nm_builds_empty_options_without_settings(self):
+        """Test that empty nm_settings produces empty options."""
+        opt = Optimizer({'algorithm': 'nelder-mead'})
+        dictOptions = opt._fdictBuildNelderMeadOptions()
+
+        assert dictOptions == {}
+
+    def test_nm_initial_simplex(self):
+        """Test that initial_simplex is converted to numpy array."""
+        config = {
+            'algorithm': 'nelder-mead',
+            'nm_settings': {
+                'initial_simplex': [[0, 0], [1, 0], [0, 1]],
+            },
+        }
+
+        opt = Optimizer(config)
+        dictOptions = opt._fdictBuildNelderMeadOptions()
+
+        assert isinstance(dictOptions['initial_simplex'], np.ndarray)
+        assert dictOptions['initial_simplex'].shape == (3, 2)
 
 
 class TestOptimizerErrors:

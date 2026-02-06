@@ -1,0 +1,19 @@
+# EarthInterior MaxLEV Example
+# Values in SI because vplanet_inference forces SI unit settings
+sSystemName    earth          # System Name
+iVerbose       0              # Verbosity level
+bOverwrite     1              # Allow file overwrites
+saBodyFiles    sun.in earth.in # Body files
+sUnitMass      kg             # Mass units
+sUnitLength    m              # Length units
+sUnitTime      sec            # Time units
+sUnitAngle     rad            # Angle units
+sUnitTemp      K              # Temperature units
+bDoLog         1              # Write a log file
+iDigits        6              # Digits right of decimal
+dMinValue      1e-10          # Minimum value
+bDoForward     1              # Forward evolution
+bVarDt         1              # Variable timestepping
+dEta           0.1            # Variable timestep coefficient
+dStopTime      1.420092e17    # Stop time [sec] = 4.5 Gyr
+dOutputTime    3.155760e14    # Output timestep [sec] = 10 Myr

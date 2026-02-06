@@ -1,0 +1,10 @@
+# Sun parameters for EarthInterior example
+# Values in SI because vplanet_inference forces SI unit settings
+sName          sun            # Body name
+saModules      stellar        # Modules
+dMass          1.989e30       # Mass [kg] = 1 Msun
+dSemi          0              # Semi-major axis [m]
+dEcc           0              # Eccentricity
+dRadius        6.957e8        # Radius [m] = 1 Rsun
+dLuminosity    -1             # Luminosity, negative -> solar
+sStellarModel  none           # Stellar model

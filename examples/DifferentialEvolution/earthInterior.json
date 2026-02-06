@@ -2,8 +2,8 @@
     "name": "EarthInterior",
 
     "vplanet": {
-        "inpath": "examples/EarthInterior",
-        "executable": "/Users/rory/src/vplanet-private/bin/vplanet",
+        "inpath": "examples/DifferentialEvolution",
+        "executable": "vplanet",
         "vplfile": "vpl.in",
         "verbose": false,
         "timeout": 120

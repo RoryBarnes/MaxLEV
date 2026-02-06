@@ -204,7 +204,27 @@ where :math:`x_i` is the model value, :math:`\mu_i` is the observed value, and
 Optimizer
 ---------
 
-The ``optimizer`` section configures the optimization algorithm:
+The ``optimizer`` section configures the optimization algorithm.
+
+Common options:
+
+- ``algorithm``: Optimization algorithm (see below)
+- ``maxiter``: Maximum number of iterations
+- ``x0``: Optional initial guess as a list of parameter values. If not
+  specified, local optimizers start from the center of the parameter bounds.
+
+Supported algorithms:
+
+- ``differential_evolution``: Global optimizer (recommended for initial
+  exploration). Does not use ``x0``.
+- ``nelder-mead``: Local optimizer (simplex method, derivative-free).
+  Recommended for refining a previous result.
+- ``powell``: Local optimizer (direction-set method)
+- ``bfgs``: Local optimizer (gradient-based)
+- ``cobyla``: Local optimizer (constrained)
+
+Differential Evolution Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: json
 
@@ -227,18 +247,44 @@ The ``optimizer`` section configures the optimization algorithm:
         }
     }
 
-Supported algorithms:
-
-- ``differential_evolution``: Global optimizer (recommended for most problems)
-- ``powell``: Local optimizer
-- ``nelder-mead``: Local optimizer (simplex method)
-- ``bfgs``: Local optimizer (gradient-based)
-- ``cobyla``: Local optimizer (constrained)
-
 .. warning::
 
     The ``polish`` option should be set to ``false`` for differential evolution
     to ensure the final solution respects parameter bounds.
+
+Nelder-Mead Settings
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: json
+
+    {
+        "optimizer": {
+            "algorithm": "nelder-mead",
+            "maxiter": 5000,
+            "x0": [3107.74, 4566.38, 0.06523, 8.808e-4, 2.354, 306026.0],
+            "nm_settings": {
+                "adaptive": true,
+                "xatol": 1e-6,
+                "fatol": 1e-6
+            }
+        }
+    }
+
+The ``nm_settings`` section supports:
+
+- ``adaptive``: Use the adaptive algorithm that scales simplex operations
+  based on dimensionality. Recommended for problems with more than 2
+  parameters.
+- ``xatol``: Absolute error in parameter values for convergence.
+- ``fatol``: Absolute error in function value for convergence.
+- ``initial_simplex``: Optional array of vertices to define the starting
+  simplex.
+
+.. note::
+
+    Nelder-Mead does not enforce parameter bounds directly. The objective
+    function returns ``failure_penalty`` for out-of-bounds evaluations,
+    effectively constraining the search.
 
 Output Settings
 ---------------

@@ -1,15 +1,13 @@
 Examples
 ========
 
-EarthInterior
--------------
-
-This example demonstrates using ``MaxLEV`` to constrain Earth's initial thermal
-state by fitting 6 parameters to 11 observational constraints using the
-``thermint`` module.
+Each example uses the same VPLanet model of Earth's thermal interior but
+demonstrates a different optimization algorithm. The science problem is
+identical: constrain Earth's initial thermal state by fitting 6 parameters to 11
+observational constraints using the ``thermint`` module.
 
 The Problem
-^^^^^^^^^^^
+-----------
 
 Earth's present-day thermal and magnetic properties provide constraints on its
 initial conditions 4.5 billion years ago. The ``thermint`` module in VPLanet
@@ -26,7 +24,7 @@ the most likely initial conditions.
 Parameters
 ^^^^^^^^^^
 
-The optimization varies 6 parameters:
+Both examples vary the same 6 parameters:
 
 .. list-table::
    :header-rows: 1
@@ -98,6 +96,62 @@ The model is constrained by 11 observables with uncertainties:
      - 9.1 R_Earth
      - 0.14 R_Earth
 
+Unit Conversions
+^^^^^^^^^^^^^^^^
+
+Some VPLanet outputs require unit conversions. The configuration file specifies
+``conversion_factor`` values for outputs that need scaling:
+
+.. code-block:: json
+
+    {
+        "name": "final.earth.HflowUMan",
+        "units": "TW",
+        "conversion_factor": 1e-12,
+        "description": "VPLanet reports in kg/sec^3; convert to TW"
+    }
+
+The magnetic moment and magnetopause radius are normalized to Earth's present
+values for easier interpretation of the results.
+
+Differential Evolution
+----------------------
+
+Differential evolution (DE) is a global optimizer that searches the entire
+parameter space. It is the recommended algorithm for initial exploration of a
+new problem because it does not depend on a starting point.
+
+Configuration
+^^^^^^^^^^^^^
+
+The optimizer section uses ``differential_evolution`` with typical settings:
+
+.. code-block:: json
+
+    {
+        "optimizer": {
+            "algorithm": "differential_evolution",
+            "seed": 42,
+            "maxiter": 100,
+            "tol": 0.01,
+            "de_settings": {
+                "strategy": "best1bin",
+                "popsize": 15,
+                "mutation": [0.5, 1.0],
+                "recombination": 0.7,
+                "workers": 1,
+                "updating": "deferred",
+                "polish": false,
+                "disp": true
+            }
+        }
+    }
+
+.. warning::
+
+    The ``polish`` option should be set to ``false`` to ensure the final
+    solution respects parameter bounds.
+
 Running the Example
 ^^^^^^^^^^^^^^^^^^^
 
@@ -105,7 +159,7 @@ From the MaxLEV directory:
 
 .. code-block:: bash
 
-    python maxlev.py examples/EarthInterior/earthInterior.json
+    python maxlev.py examples/DifferentialEvolution/earthInterior.json
 
 This runs differential evolution with 100 generations (approximately 1500
 VPLanet simulations). Each simulation takes about 1 second, so the full
@@ -136,56 +190,105 @@ The optimization produces:
 With 11 observables and 6 parameters, there are 5 degrees of freedom. A chi^2
 of 6.08 corresponds to a reduced chi^2 of 1.22, indicating a good fit.
 
-All observables are within 1.5 sigma of their observed values:
+The complete configuration file is at
+``examples/DifferentialEvolution/earthInterior.json``.
 
-.. code-block:: text
+Nelder-Mead
+------------
 
-    upperMantleTemperature         = 1.583259e+03 (obs: 1.587000e+03)
-      Residual: -0.110 sigma
-    innerCoreRadius                = 1.224059e+03 (obs: 1.224100e+03)
-      Residual: -0.410 sigma
+The Nelder-Mead simplex method is a local optimizer that refines a solution from
+a starting point. It is best used after differential evolution has identified
+an approximate solution. Nelder-Mead is derivative-free, making it robust for
+noisy or discontinuous objective functions.
+
+Configuration
+^^^^^^^^^^^^^
+
+The optimizer section uses ``nelder-mead`` with algorithm-specific settings:
+
+.. code-block:: json
+
+    {
+        "optimizer": {
+            "algorithm": "nelder-mead",
+            "maxiter": 5000,
+            "nm_settings": {
+                "adaptive": true,
+                "xatol": 1e-6,
+                "fatol": 1e-6
+            }
+        }
+    }
+
+The ``nm_settings`` section supports:
+
+- ``adaptive``: Use the adaptive Nelder-Mead algorithm, which scales simplex
+  operations based on dimensionality. Recommended for problems with more than
+  2 parameters.
+- ``xatol``: Absolute error in parameter values for convergence.
+- ``fatol``: Absolute error in function value for convergence.
+- ``initial_simplex``: Optional array of vertices to define the starting simplex.
+
+To refine a previous differential evolution result, provide the DE solution as
+the starting point with the ``x0`` option:
+
+.. code-block:: json
+
+    {
+        "optimizer": {
+            "algorithm": "nelder-mead",
+            "maxiter": 5000,
+            "x0": [3107.74, 4566.38, 0.06523, 8.808e-4, 2.354, 306026.0],
+            "nm_settings": {
+                "adaptive": true,
+                "xatol": 1e-6,
+                "fatol": 1e-6
+            }
+        }
+    }
+
+If ``x0`` is not specified, the optimizer starts from the center of the
+parameter bounds.
+
+Running the Example
+^^^^^^^^^^^^^^^^^^^
+
+From the MaxLEV directory:
+
+.. code-block:: bash
+
+    python maxlev.py examples/NelderMead/nelderMead.json
+
+With ``adaptive`` enabled and 5000 maximum iterations, the optimization
+typically converges in a few hundred function evaluations, taking a few minutes.
+
+.. note::
+
+    Nelder-Mead does not enforce parameter bounds directly. Instead, the
+    objective function returns a large penalty value (``failure_penalty``) for
+    any evaluation outside the bounds, effectively constraining the search.
+
+The complete configuration file is at
+``examples/NelderMead/nelderMead.json``.
 
 Generated Files
-^^^^^^^^^^^^^^^
+---------------
 
-After optimization, the directory contains:
+After either optimization, the example directory contains:
 
 .. code-block:: text
 
-    examples/EarthInterior/
+    examples/<Method>/
         earth.in           # Original template
         earth_maxlev.in    # Generated with ML values
         sun.in
         vpl.in
-    earthInterior_results.txt
+    <method>_results.txt
 
 The ``earth_maxlev.in`` file contains the maximum likelihood parameter values
 and can be run directly with VPLanet:
 
 .. code-block:: bash
 
-    cd examples/EarthInterior
+    cd examples/<Method>
     vplanet vpl.in
-
-Unit Conversions
-^^^^^^^^^^^^^^^^
-
-Some VPLanet outputs require unit conversions. The configuration file specifies
-``conversion_factor`` values for outputs that need scaling:
-
-.. code-block:: json
-
-    {
-        "name": "final.earth.HflowUMan",
-        "units": "TW",
-        "conversion_factor": 1e-12,
-        "description": "VPLanet reports in kg/sec^3; convert to TW"
-    }
-
-The magnetic moment and magnetopause radius are normalized to Earth's present
-values for easier interpretation of the results.
-
-Configuration File
-^^^^^^^^^^^^^^^^^^
-
-The complete configuration file is at ``examples/EarthInterior/earthInterior.json``.
