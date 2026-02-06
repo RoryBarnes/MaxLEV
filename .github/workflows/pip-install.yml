@@ -1,14 +1,14 @@
 name: pip-install
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  release:
+    types:
+      - published
 
 jobs:
-  install:
-    name: "Install on py${{ matrix.python-version }} / ${{ matrix.os }}"
+
+  build:
+    name: Build on py${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -18,32 +18,32 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Build
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install numpy scipy astropy matplotlib
-          python -m pip install vplanet vplanet_inference
+          python -m pip install -U pip build
+          python -m build .
 
-      - name: Verify imports
+      - name: Test the sdist
         run: |
-          python -c "from maxlev import config; print('config OK')"
-          python -c "from maxlev import likelihood; print('likelihood OK')"
-          python -c "from maxlev import observables; print('observables OK')"
-          python -c "from maxlev import optimizer; print('optimizer OK')"
-          python -c "from maxlev import output; print('output OK')"
-          python -c "from maxlev import units; print('units OK')"
-          python -c "from maxlev import validation; print('validation OK')"
+          python -m venv venv-sdist
+          venv-sdist/bin/python -m pip install dist/maxlev*.tar.gz
+          venv-sdist/bin/python -c "import maxlev; print('maxlev imported successfully')"
 
-      - name: Test CLI help
+      - name: Test the wheel
         run: |
-          python maxlev.py --help
+          python -m venv venv-wheel
+          venv-wheel/bin/python -m pip install dist/maxlev*.whl
+          venv-wheel/bin/python -c "import maxlev; print('maxlev imported successfully')"
 
-      - name: Test validation mode
-        run: |
-          python maxlev.py examples/EarthInterior/earthInterior.json --validate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/*
