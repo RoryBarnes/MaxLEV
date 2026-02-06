@@ -176,7 +176,7 @@ def test_optimizer_respects_worker_count():
     }
 
     optimizer_serial = Optimizer(config_serial)
-    result_serial = optimizer_serial._run_differential_evolution(_simple_objective_for_testing, bounds)
+    result_serial = optimizer_serial._fnRunDifferentialEvolution(_simple_objective_for_testing, bounds)
 
     assert result_serial is not None
     print("✓ Serial optimization (workers=1) completes successfully")
@@ -198,7 +198,7 @@ def test_optimizer_respects_worker_count():
         }
 
         optimizer_parallel = Optimizer(config_parallel)
-        result_parallel = optimizer_parallel._run_differential_evolution(_simple_objective_for_testing, bounds)
+        result_parallel = optimizer_parallel._fnRunDifferentialEvolution(_simple_objective_for_testing, bounds)
 
         assert result_parallel is not None
         print(f"✓ Parallel optimization (workers={workers}) completes successfully")

@@ -1,0 +1,170 @@
+{
+    "name": "EarthInteriorNelderMead",
+
+    "vplanet": {
+        "inpath": "examples/NelderMead",
+        "executable": "vplanet",
+        "vplfile": "vpl.in",
+        "verbose": false,
+        "timeout": 120
+    },
+
+    "parameters": [
+        {
+            "name": "earth.dTMan",
+            "bounds": [2500, 3500],
+            "units": "K",
+            "description": "Initial mantle temperature"
+        },
+        {
+            "name": "earth.dTCMB",
+            "bounds": [4000, 5000],
+            "units": "K",
+            "description": "Initial core-mantle boundary temperature"
+        },
+        {
+            "name": "earth.dEruptEff",
+            "bounds": [0.01, 0.1],
+            "units": "dimensionless",
+            "description": "Melt eruption efficiency"
+        },
+        {
+            "name": "earth.dDTChiRef",
+            "bounds": [1e-4, 1e-3],
+            "units": "K",
+            "description": "Core liquidus depression"
+        },
+        {
+            "name": "earth.dViscJumpMan",
+            "bounds": [1, 5],
+            "units": "dimensionless",
+            "description": "Lower/upper mantle viscosity ratio"
+        },
+        {
+            "name": "earth.dActViscMan",
+            "bounds": [1e5, 5e5],
+            "units": "dimensionless",
+            "description": "Viscosity activation energy [J/mol]"
+        }
+    ],
+
+    "outputs": [
+        {"name": "final.earth.TUMan", "units": "K"},
+        {"name": "final.earth.TCMB", "units": "K"},
+        {"name": "final.earth.HflowUMan", "units": "kg/sec^3", "conversion_factor": 1e-12,
+         "description": "VPlanet reports HflowUMan as kg/sec^3 (should be W); convert to TW"},
+        {"name": "final.earth.HflowCMB", "units": "TW"},
+        {"name": "final.earth.ViscUMan", "units": "m2/s"},
+        {"name": "final.earth.ViscLMan", "units": "m2/s"},
+        {"name": "final.earth.FMeltUMan", "units": "dimensionless"},
+        {"name": "final.earth.MeltMassFluxMan", "units": "kg/s"},
+        {"name": "final.earth.RIC", "units": "km"},
+        {"name": "final.earth.MagMom", "units": "C/(m*sec^2)", "conversion_factor": 1.25e-23,
+         "description": "Raw SI divided by EMAGMOM (80e21 A m^2)"},
+        {"name": "final.earth.MagPauseRad", "units": "m", "conversion_factor": 1.72215e-8,
+         "description": "Raw meters divided by EMAGPAUSERAD (9.103 * 6.3781e6 m)"}
+    ],
+
+    "observables": [
+        {
+            "name": "upperMantleTemperature",
+            "type": "direct",
+            "output": "final.earth.TUMan",
+            "observed_value": 1587,
+            "uncertainty_lower": 34,
+            "uncertainty_upper": 164
+        },
+        {
+            "name": "coreMantieBoundaryTemperature",
+            "type": "direct",
+            "output": "final.earth.TCMB",
+            "observed_value": 4000,
+            "uncertainty": 200
+        },
+        {
+            "name": "upperMantleHeatFlow",
+            "type": "direct",
+            "output": "final.earth.HflowUMan",
+            "observed_value": 38,
+            "uncertainty": 3
+        },
+        {
+            "name": "coreMantleBoundaryHeatFlow",
+            "type": "direct",
+            "output": "final.earth.HflowCMB",
+            "observed_value": 11,
+            "uncertainty": 6
+        },
+        {
+            "name": "upperMantleViscosity",
+            "type": "direct",
+            "output": "final.earth.ViscUMan",
+            "observed_value": 2.27e18,
+            "uncertainty": 2.27e18
+        },
+        {
+            "name": "lowerMantleViscosity",
+            "type": "direct",
+            "output": "final.earth.ViscLMan",
+            "observed_value": 1.5e18,
+            "uncertainty": 1.4e18
+        },
+        {
+            "name": "upperMantleMeltFraction",
+            "type": "direct",
+            "output": "final.earth.FMeltUMan",
+            "observed_value": 0.115,
+            "uncertainty": 0.035
+        },
+        {
+            "name": "mantleMeltMassFlux",
+            "type": "direct",
+            "output": "final.earth.MeltMassFluxMan",
+            "observed_value": 1.3e6,
+            "uncertainty": 0.8e6
+        },
+        {
+            "name": "innerCoreRadius",
+            "type": "direct",
+            "output": "final.earth.RIC",
+            "observed_value": 1224.1,
+            "uncertainty": 0.1
+        },
+        {
+            "name": "magneticMoment",
+            "type": "direct",
+            "output": "final.earth.MagMom",
+            "observed_value": 1.0,
+            "uncertainty": 0.05,
+            "description": "80 +/- 4 ZA m^2, normalized by EMAGMOM = 80e21 A m^2"
+        },
+        {
+            "name": "magnetopauseRadius",
+            "type": "direct",
+            "output": "final.earth.MagPauseRad",
+            "observed_value": 0.99967,
+            "uncertainty": 0.01538,
+            "description": "9.1 +/- 0.14 Earth radii, normalized by EMAGPAUSERAD = 9.103 Earth radii"
+        }
+    ],
+
+    "likelihood": {
+        "type": "gaussian",
+        "failure_penalty": 1e10
+    },
+
+    "optimizer": {
+        "algorithm": "nelder-mead",
+        "maxiter": 5000,
+        "nm_settings": {
+            "adaptive": true,
+            "xatol": 1e-6,
+            "fatol": 1e-6
+        }
+    },
+
+    "output": {
+        "results_file": "nelderMead_results.txt",
+        "plot_evolution": false
+    }
+}
