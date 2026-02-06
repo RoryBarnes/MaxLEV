@@ -9,6 +9,11 @@ from typing import Optional
 from .units import build_inparams_dict, build_outparams_dict
 
 
+class AllSimulationsFailedError(RuntimeError):
+    """Raised when all VPLanet simulations fail during optimization."""
+    pass
+
+
 class MaxLEVModel:
     """Wrapper around vplanet_inference.VplanetModel for MLE."""
 
@@ -49,6 +54,13 @@ class MaxLEVModel:
         sorted_outputs = sorted(config.outputs, key=lambda x: x.name)
         self.daConversionFactors = np.array(
             [o.conversion_factor for o in sorted_outputs]
+        )
+
+        # Failure tracking
+        self.iSimulationCount = 0
+        self.iSimulationFailureCount = 0
+        self.iFailureCheckWindow = config.likelihood.get(
+            'failure_check_window', 10
         )
 
     def check_bounds(self, theta: np.ndarray) -> bool:
@@ -104,36 +116,41 @@ class MaxLEVModel:
 
         Returns negative log-likelihood for minimization.
         Returns failure_penalty for invalid runs.
-
-        Args:
-            theta: Parameter values array
-
-        Returns:
-            Negative log-likelihood
         """
-        # Check bounds
         if not self.check_bounds(theta):
             return self.failure_penalty
 
-        # Run simulation
         outputs = self.run_simulation(theta)
         if outputs is None:
+            self._fnRecordSimulationFailure()
             return self.failure_penalty
 
-        # Check for invalid outputs
         if not np.all(np.isfinite(outputs)):
+            self._fnRecordSimulationFailure()
             return self.failure_penalty
         if np.any(outputs <= 0):
+            self._fnRecordSimulationFailure()
             return self.failure_penalty
 
+        self.iSimulationCount += 1
+
         try:
-            # Compute observables
             computed = self.observable_computer.compute(outputs)
-
-            # Compute likelihood
-            neg_log_like = self.likelihood.compute(computed, self.config.observables)
-
+            neg_log_like = self.likelihood.compute(
+                computed, self.config.observables
+            )
             return neg_log_like
 
         except Exception:
             return self.failure_penalty
+
+    def _fnRecordSimulationFailure(self) -> None:
+        """Track simulation failure and abort if all fail."""
+        self.iSimulationCount += 1
+        self.iSimulationFailureCount += 1
+        if (self.iSimulationCount >= self.iFailureCheckWindow
+                and self.iSimulationFailureCount == self.iSimulationCount):
+            raise AllSimulationsFailedError(
+                f"All {self.iSimulationCount} VPLanet simulations failed. "
+                f"Check that vplanet runs correctly with your input files."
+            )

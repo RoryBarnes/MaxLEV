@@ -51,9 +51,8 @@ def main():
     from .config import MaxLEVConfig
     from .likelihood import create_likelihood
     from .observables import ObservableComputer
-    from .model import MaxLEVModel
+    from .model import MaxLEVModel, AllSimulationsFailedError
     from .optimizer import Optimizer
-    from .output import save_results, plot_evolution
 
     # Load configuration
     config_path = Path(args.config)
@@ -122,13 +121,37 @@ def main():
 
     # Run optimization
     optimizer = Optimizer(config.optimizer)
-    best_params, best_value, result_info = optimizer.optimize(
-        model.neg_log_likelihood,
-        model.bounds,
-        model.param_names
-    )
+    try:
+        best_params, best_value, result_info = optimizer.optimize(
+            model.neg_log_likelihood,
+            model.bounds,
+            model.param_names
+        )
+    except AllSimulationsFailedError as e:
+        print("\n" + "=" * 70)
+        print("OPTIMIZATION ABORTED")
+        print("=" * 70)
+        print(f"\n{e}")
+        print("\nTry running 'vplanet vpl.in' in the input directory to")
+        print("diagnose the problem.")
+        sys.exit(1)
+
+    # Check if optimization result is meaningful
+    fFailurePenalty = config.likelihood.get('failure_penalty', 1e10)
+    if best_value >= fFailurePenalty:
+        _fnReportFailedOptimization(best_value, model, config)
+        sys.exit(1)
 
     # Report results
+    _fnReportResults(
+        best_params, best_value, config, model, config.output_settings
+    )
+
+
+def _fnReportResults(best_params, best_value, config, model, output_settings):
+    """Print results, save files, and report success."""
+    from .output import save_results, plot_evolution
+
     print("\n" + "=" * 70)
     print("Maximum Likelihood Results")
     print("=" * 70)
@@ -137,13 +160,29 @@ def main():
     print(f"\n-ln(Likelihood) = {best_value:.6e}")
     print(f"chi^2           = {2*best_value:.6e}")
 
-    # Save results and generate plots
-    save_results(best_params, best_value, config, model, config.output_settings)
-    plot_evolution(best_params, config, model, config.output_settings)
+    save_results(best_params, best_value, config, model, output_settings)
+    plot_evolution(best_params, config, model, output_settings)
 
     print("\n" + "=" * 70)
     print("Maximum likelihood estimation completed successfully!")
     print("=" * 70 + "\n")
+
+
+def _fnReportFailedOptimization(best_value, model, config):
+    """Report that optimization finished but no valid solution was found."""
+    print("\n" + "=" * 70)
+    print("OPTIMIZATION FAILED")
+    print("=" * 70)
+    print(f"\nBest objective value ({best_value:.6e}) equals the failure")
+    print("penalty, meaning no VPLanet simulation produced valid output.")
+    print(f"\nSimulations attempted: {model.iSimulationCount}")
+    print(f"Simulations failed:   {model.iSimulationFailureCount}")
+    print("\nPossible causes:")
+    print("  - VPLanet executable is incompatible with the input files")
+    print("  - All parameter combinations produce unphysical results")
+    print("  - Input file formatting errors")
+    print("\nTry running 'vplanet vpl.in' in the input directory to")
+    print("diagnose the problem.")
 
 
 if __name__ == '__main__':

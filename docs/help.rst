@@ -5,10 +5,11 @@ Run MaxLEV with the command:
 
 .. code-block:: bash
 
-    python maxlev.py <config.json>
+    maxlev <config.json>
 
 where ``config.json`` is a JSON file that defines the optimization problem (see
-:doc:`config` for details).
+:doc:`config` for details). The ``maxlev`` command is available after installation
+with ``pip install -e .`` (see :doc:`install`).
 
 Command-Line Options
 --------------------
@@ -41,19 +42,19 @@ Validate a configuration file:
 
 .. code-block:: bash
 
-    python maxlev.py myconfig.json --validate
+    maxlev myconfig.json --validate
 
 Run optimization with 4 parallel workers:
 
 .. code-block:: bash
 
-    python maxlev.py myconfig.json --workers 4
+    maxlev myconfig.json --workers 4
 
 Run with a different random seed:
 
 .. code-block:: bash
 
-    python maxlev.py myconfig.json --seed 12345
+    maxlev myconfig.json --seed 12345
 
 Output Files
 ------------
@@ -73,12 +74,12 @@ Example output structure:
 
 .. code-block:: text
 
-    examples/EarthInterior/
+    examples/<Method>/
         earth.in           # Original template
         earth_maxlev.in    # Generated with ML values
         sun.in
         vpl.in
-    earthInterior_results.txt
+    <method>_results.txt
 
 Timeout Handling
 ----------------

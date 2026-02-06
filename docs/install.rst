@@ -22,17 +22,19 @@ Clone the repository:
     git clone https://github.com/RoryBarnes/MaxLEV.git
     cd MaxLEV
 
-Install dependencies:
+Install in development mode:
 
 .. code-block:: bash
 
-    pip install numpy scipy astropy vplanet vplanet_inference
+    pip install -e .
+
+This installs all dependencies and registers the ``maxlev`` command.
 
 Verify installation:
 
 .. code-block:: bash
 
-    python maxlev.py --help
+    maxlev --help
 
 VPLanet Configuration
 ---------------------

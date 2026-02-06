@@ -232,5 +232,33 @@ class TestMainOverrides:
             Path(config_path).unlink()
 
 
+class TestFailureReporting:
+    """Tests for CLI failure reporting."""
+
+    def test_reports_failed_optimization(self, capsys):
+        """Test that penalty-value result is reported as failure."""
+        from maxlev.cli import _fnReportFailedOptimization
+
+        mock_model = MagicMock()
+        mock_model.iSimulationCount = 50
+        mock_model.iSimulationFailureCount = 50
+        mock_config = MagicMock()
+
+        _fnReportFailedOptimization(1e10, mock_model, mock_config)
+
+        captured = capsys.readouterr()
+        assert "OPTIMIZATION FAILED" in captured.out
+        assert "50" in captured.out
+
+    def test_reports_all_simulations_failed(self, capsys):
+        """Test that AllSimulationsFailedError message is informative."""
+        from maxlev.model import AllSimulationsFailedError
+
+        error = AllSimulationsFailedError(
+            "All 10 VPLanet simulations failed."
+        )
+        assert "All 10" in str(error)
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

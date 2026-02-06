@@ -2,7 +2,7 @@
     "name": "EarthInterior",
 
     "vplanet": {
-        "inpath": "examples/DifferentialEvolution",
+        "inpath": ".",
         "executable": "vplanet",
         "vplfile": "vpl.in",
         "verbose": false,

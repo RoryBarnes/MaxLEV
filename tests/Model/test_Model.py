@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from maxlev.model import MaxLEVModel
+from maxlev.model import MaxLEVModel, AllSimulationsFailedError
 from maxlev.config import ParameterConfig, OutputConfig, ObservableConfig
 
 
@@ -325,6 +325,109 @@ class TestConversionFactors:
         assert outputs is not None
         assert outputs[0] == 10.0  # 1.0 * 10.0 (final.planet.Ecc comes first alphabetically)
         assert outputs[1] == 200.0  # 2.0 * 100.0
+
+
+class TestFailureTracking:
+    """Tests for simulation failure tracking and early abort."""
+
+    @patch('maxlev.model.vpi')
+    def test_tracks_simulation_failures(self, mock_vpi):
+        """Test that simulation failures are counted."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.side_effect = Exception("VPLanet crashed")
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        config.likelihood['failure_check_window'] = 20
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        theta = np.array([1.0, 0.2])
+        model.neg_log_likelihood(theta)
+
+        assert model.iSimulationCount == 1
+        assert model.iSimulationFailureCount == 1
+
+    @patch('maxlev.model.vpi')
+    def test_aborts_after_all_simulations_fail(self, mock_vpi):
+        """Test that AllSimulationsFailedError is raised."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.side_effect = Exception("VPLanet crashed")
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        config.likelihood['failure_check_window'] = 3
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        theta = np.array([1.0, 0.2])
+        model.neg_log_likelihood(theta)
+        model.neg_log_likelihood(theta)
+        with pytest.raises(AllSimulationsFailedError):
+            model.neg_log_likelihood(theta)
+
+    @patch('maxlev.model.vpi')
+    def test_no_abort_when_some_succeed(self, mock_vpi):
+        """Test that mixed success/failure does not abort."""
+        iCallCount = [0]
+
+        def fnAlternatingResults(theta, remove=True):
+            iCallCount[0] += 1
+            if iCallCount[0] % 2 == 0:
+                raise Exception("Failure")
+            return np.array([0.1, 1.0])
+
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.side_effect = fnAlternatingResults
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        config.likelihood['failure_check_window'] = 3
+        likelihood = MagicMock()
+        likelihood.compute.return_value = 5.0
+        observable_computer = MagicMock()
+        observable_computer.compute.return_value = {'Eccentricity': 0.1}
+
+        model = MaxLEVModel(config, likelihood, observable_computer)
+
+        theta = np.array([1.0, 0.2])
+        for _ in range(10):
+            model.neg_log_likelihood(theta)
+
+        assert model.iSimulationFailureCount < model.iSimulationCount
+
+    @patch('maxlev.model.vpi')
+    def test_bounds_violations_not_counted(self, mock_vpi):
+        """Test that out-of-bounds calls do not increment counters."""
+        mock_vpi.VplanetModel.return_value = MagicMock()
+
+        config = MockConfig()
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        theta_oob = np.array([0.1, 0.2])
+        model.neg_log_likelihood(theta_oob)
+
+        assert model.iSimulationCount == 0
+        assert model.iSimulationFailureCount == 0
+
+    @patch('maxlev.model.vpi')
+    def test_default_failure_check_window(self, mock_vpi):
+        """Test that default failure_check_window is 10."""
+        mock_vpi.VplanetModel.return_value = MagicMock()
+
+        config = MockConfig()
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        assert model.iFailureCheckWindow == 10
+
+    @patch('maxlev.model.vpi')
+    def test_custom_failure_check_window(self, mock_vpi):
+        """Test that failure_check_window is configurable."""
+        mock_vpi.VplanetModel.return_value = MagicMock()
+
+        config = MockConfig()
+        config.likelihood['failure_check_window'] = 5
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        assert model.iFailureCheckWindow == 5
 
 
 if __name__ == '__main__':

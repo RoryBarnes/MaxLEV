@@ -79,9 +79,19 @@ class MaxLEVConfig:
     @classmethod
     def from_json(cls, filepath: str) -> 'MaxLEVConfig':
         """Load configuration from JSON file."""
+        pathConfigDir = Path(filepath).resolve().parent
         with open(filepath, 'r') as f:
             data = json.load(f)
-        return cls._from_dict(data)
+        config = cls._from_dict(data)
+        config._fnResolveInpath(pathConfigDir)
+        return config
+
+    def _fnResolveInpath(self, pathConfigDir: Path) -> None:
+        """Resolve vplanet inpath relative to config file directory."""
+        sRawInpath = self.vplanet.get('inpath', '.')
+        self.vplanet['inpath'] = str(
+            (pathConfigDir / sRawInpath).resolve()
+        )
 
     @classmethod
     def _from_dict(cls, data: dict) -> 'MaxLEVConfig':
