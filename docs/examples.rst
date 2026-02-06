@@ -155,11 +155,10 @@ The optimizer section uses ``differential_evolution`` with typical settings:
 Running the Example
 ^^^^^^^^^^^^^^^^^^^
 
-From the MaxLEV directory:
-
 .. code-block:: bash
 
-    python maxlev.py examples/DifferentialEvolution/earthInterior.json
+    cd examples/DifferentialEvolution
+    maxlev earthInterior.json
 
 This runs differential evolution with 100 generations (approximately 1500
 VPLanet simulations). Each simulation takes about 1 second, so the full
@@ -253,11 +252,10 @@ parameter bounds.
 Running the Example
 ^^^^^^^^^^^^^^^^^^^
 
-From the MaxLEV directory:
-
 .. code-block:: bash
 
-    python maxlev.py examples/NelderMead/nelderMead.json
+    cd examples/NelderMead
+    maxlev nelderMead.json
 
 With ``adaptive`` enabled and 5000 maximum iterations, the optimization
 typically converges in a few hundred function evaluations, taking a few minutes.

@@ -235,6 +235,75 @@ class TestMaxLEVConfigFromJson:
             Path(config_path).unlink()
 
 
+class TestInpathResolution:
+    """Tests for inpath resolution relative to config file."""
+
+    def test_relative_inpath_resolves_to_config_directory(self):
+        """Test that inpath '.' resolves to the config file's directory."""
+        config_data = {
+            'vplanet': {'inpath': '.'},
+            'parameters': [],
+            'outputs': [],
+            'observables': []
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.json', delete=False
+        ) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = MaxLEVConfig.from_json(config_path)
+            sExpected = str(Path(config_path).resolve().parent)
+            assert config.vplanet['inpath'] == sExpected
+        finally:
+            Path(config_path).unlink()
+
+    def test_absolute_inpath_unchanged(self):
+        """Test that an absolute inpath is not modified."""
+        config_data = {
+            'vplanet': {'inpath': '/tmp/test'},
+            'parameters': [],
+            'outputs': [],
+            'observables': []
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.json', delete=False
+        ) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = MaxLEVConfig.from_json(config_path)
+            assert config.vplanet['inpath'] == str(
+                Path('/tmp/test').resolve()
+            )
+        finally:
+            Path(config_path).unlink()
+
+    def test_subdirectory_inpath_resolves_correctly(self):
+        """Test that a relative subdirectory inpath resolves correctly."""
+        with tempfile.TemporaryDirectory() as sTmpDir:
+            pathSubDir = Path(sTmpDir) / 'data'
+            pathSubDir.mkdir()
+
+            config_data = {
+                'vplanet': {'inpath': 'data'},
+                'parameters': [],
+                'outputs': [],
+                'observables': []
+            }
+
+            config_path = Path(sTmpDir) / 'config.json'
+            with open(config_path, 'w') as f:
+                json.dump(config_data, f)
+
+            config = MaxLEVConfig.from_json(str(config_path))
+            assert config.vplanet['inpath'] == str(pathSubDir.resolve())
+
+
 class TestMaxLEVConfigValidate:
     """Tests for MaxLEVConfig.validate method."""
 

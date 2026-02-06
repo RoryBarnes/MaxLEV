@@ -27,6 +27,9 @@ docs = [
     "sphinx_rtd_theme",
 ]
 
+[project.scripts]
+maxlev = "maxlev.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/RoryBarnes/MaxLEV"
 Documentation = "https://rorybarnes.github.io/MaxLEV"

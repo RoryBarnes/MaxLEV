@@ -2,7 +2,7 @@
     "name": "EarthInteriorNelderMead",
 
     "vplanet": {
-        "inpath": "examples/NelderMead",
+        "inpath": ".",
         "executable": "vplanet",
         "vplfile": "vpl.in",
         "verbose": false,
