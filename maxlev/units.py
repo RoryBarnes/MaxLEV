@@ -56,6 +56,8 @@ def parse_unit_string(unit_str: str) -> u.Unit:
         'au': u.au,
         'rearth': u.Rearth,
         'mearth': u.Mearth,
+        'kelvin': u.K,
+        'celsius': u.deg_C,
         'dimensionless': u.dimensionless_unscaled,
     }
 

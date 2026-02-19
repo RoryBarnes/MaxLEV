@@ -128,9 +128,6 @@ class MaxLEVModel:
         if not np.all(np.isfinite(outputs)):
             self._fnRecordSimulationFailure()
             return self.failure_penalty
-        if np.any(outputs <= 0):
-            self._fnRecordSimulationFailure()
-            return self.failure_penalty
 
         self.iSimulationCount += 1
 

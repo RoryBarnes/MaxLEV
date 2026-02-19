@@ -1,0 +1,30 @@
+EarthClimate Maximum Likelihood Estimation
+======================================================================
+
+Maximum Likelihood Parameters:
+----------------------------------------------------------------------
+earth.dIceAlbedo               = 4.000000e-01
+earth.dAlbedoLand              = 2.731583e-01
+earth.dAlbedoWater             = 4.005159e-01
+earth.dDiffusion               = 8.000000e-01
+earth.dHeatCapLand             = 8.973954e+07
+earth.dHeatCapWater            = 1.016250e+08
+
+-ln(Likelihood) = 2.536371e+00
+chi^2           = 5.072742e+00
+
+Model Predictions:
+----------------------------------------------------------------------
+TGlobal                        = 1.589215e+01 (obs: 1.400000e+01)
+  Residual: +1.892 sigma
+OLR                            = 2.377783e+02 (obs: 2.390000e+02)
+  Residual: -1.222 sigma
+
+Parameter Bounds:
+----------------------------------------------------------------------
+earth.dIceAlbedo              : [4.000000e-01, 8.000000e-01]
+earth.dAlbedoLand             : [2.000000e-01, 6.000000e-01]
+earth.dAlbedoWater            : [1.000000e-01, 5.000000e-01]
+earth.dDiffusion              : [4.000000e-01, 8.000000e-01]
+earth.dHeatCapLand            : [1.000000e+07, 9.000000e+07]
+earth.dHeatCapWater           : [1.000000e+08, 9.000000e+08]

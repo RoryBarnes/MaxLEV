@@ -1,0 +1,99 @@
+{
+    "name": "EarthClimate",
+    "vplanet": {
+        "inpath": ".",
+        "executable": "vplanet",
+        "vplfile": "vpl.in",
+        "verbose": false,
+        "timeout": 300
+    },
+    "parameters": [
+         {
+            "name": "earth.dIceAlbedo",
+            "bounds": [0.4, 0.8],
+            "units": "",
+            "description": "Ice albedo"
+        },
+       {
+            "name": "earth.dAlbedoLand",
+            "bounds": [0.2, 0.6],
+            "units": "",
+            "description": "Land albedo"
+        },
+        {
+            "name": "earth.dAlbedoWater",
+            "bounds": [0.1, 0.5],
+            "units": "",
+            "description": "Water albedo"
+        },
+        {
+            "name": "earth.dDiffusion",
+            "bounds": [0.4, 0.8],
+            "units": "",
+            "description": "Heat diffusion coefficient"
+        },
+        {
+            "name": "earth.dHeatCapLand",
+            "bounds": [1e7, 9e7],
+            "units": "",
+            "description": "Heat capacity of land [J/(m^2 K)]"
+        },
+        {
+            "name": "earth.dHeatCapWater",
+            "bounds": [1e8, 9e8],
+            "units": "",
+            "description": "Heat capacity of water [J/(m^2 K)]"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "final.earth.TGlobal",
+            "units": "Celsius"
+        },
+        {
+            "name": "final.earth.FluxOutGlobal",
+            "units": "W/m2"
+        }
+    ],
+    "observables": [
+        {
+            "name": "TGlobal",
+            "type": "direct",
+            "output": "final.earth.TGlobal",
+            "observed_value": 14.0,
+            "uncertainty": 1.0
+        },
+        {
+            "name": "OLR",
+            "type": "direct",
+            "output": "final.earth.FluxOutGlobal",
+            "observed_value": 239.0,
+            "uncertainty": 1.0
+        }
+    ],
+    "likelihood": {
+        "type": "gaussian",
+        "failure_penalty": 1e10,
+        "failure_check_window": 20
+    },
+    "optimizer": {
+        "algorithm": "differential_evolution",
+        "seed": 42,
+        "maxiter": 200,
+        "tol": 0.001,
+        "de_settings": {
+            "strategy": "best1bin",
+            "popsize": 5,
+            "mutation": [0.5, 1.0],
+            "recombination": 0.7,
+            "workers": 8,
+            "updating": "deferred",
+            "polish": true,
+            "disp": true
+        }
+    },
+    "output": {
+        "results_file": "results.txt",
+        "plot_evolution": false
+    }
+}
