@@ -17,7 +17,8 @@ class AllSimulationsFailedError(RuntimeError):
 class MaxLEVModel:
     """Wrapper around vplanet_inference.VplanetModel for MLE."""
 
-    def __init__(self, config, likelihood_model, observable_computer):
+    def __init__(self, config, likelihood_model, observable_computer,
+                 prior_collection=None):
         """
         Initialize VPlanet model from configuration.
 
@@ -25,10 +26,12 @@ class MaxLEVModel:
             config: MaxLEVConfig object
             likelihood_model: LikelihoodModel instance
             observable_computer: ObservableComputer instance
+            prior_collection: Optional PriorCollection for MAP estimation
         """
         self.config = config
         self.likelihood = likelihood_model
         self.observable_computer = observable_computer
+        self.priorCollection = prior_collection
         self.failure_penalty = config.likelihood.get('failure_penalty', 1e10)
         self.iTimeout = config.vplanet.get('timeout', 120)
 
@@ -140,6 +143,15 @@ class MaxLEVModel:
 
         except Exception:
             return self.failure_penalty
+
+    def fdNegLogPosterior(self, daTheta: np.ndarray) -> float:
+        """Objective for MAP: negative log-posterior = -ln(L) - ln(prior)."""
+        dNegLogLike = self.neg_log_likelihood(daTheta)
+        if dNegLogLike >= self.failure_penalty:
+            return self.failure_penalty
+        if self.priorCollection is None:
+            return dNegLogLike
+        return dNegLogLike + self.priorCollection.fdNegLogPrior(daTheta)
 
     def _fnRecordSimulationFailure(self) -> None:
         """Track simulation failure and abort if all fail."""

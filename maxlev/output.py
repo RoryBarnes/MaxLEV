@@ -127,22 +127,38 @@ def _fsUpdateLine(sLine: str, dictParamValues: Dict[str, float]) -> str:
 
 
 def save_results(best_params: np.ndarray, best_value: float,
-                 config, model, output_settings: Dict[str, Any]):
+                 config, model, output_settings: Dict[str, Any],
+                 prior_collection=None):
     """Save optimization results to file."""
 
     filepath = output_settings.get('results_file', 'maxlike_results.txt')
+    bHasPriors = prior_collection is not None and prior_collection.fbHasPriors()
 
     with open(filepath, 'w') as f:
-        f.write(f"{config.name} Maximum Likelihood Estimation\n")
+        if bHasPriors:
+            f.write(f"{config.name} Maximum A Posteriori (MAP) Estimation\n")
+        else:
+            f.write(f"{config.name} Maximum Likelihood Estimation\n")
         f.write("=" * 70 + "\n\n")
 
-        f.write("Maximum Likelihood Parameters:\n")
+        if bHasPriors:
+            f.write("MAP Parameters:\n")
+        else:
+            f.write("Maximum Likelihood Parameters:\n")
         f.write("-" * 70 + "\n")
         for i, param in enumerate(config.parameters):
             f.write(f"{param.name:30s} = {best_params[i]:.6e}\n")
 
-        f.write(f"\n-ln(Likelihood) = {best_value:.6e}\n")
-        f.write(f"chi^2           = {2*best_value:.6e}\n")
+        if bHasPriors:
+            dNegLogLike = model.neg_log_likelihood(best_params)
+            dNegLogPrior = prior_collection.fdNegLogPrior(best_params)
+            f.write(f"\n-ln(Posterior)  = {best_value:.6e}\n")
+            f.write(f"-ln(Likelihood) = {dNegLogLike:.6e}\n")
+            f.write(f"-ln(Prior)      = {dNegLogPrior:.6e}\n")
+            f.write(f"chi^2           = {2*dNegLogLike:.6e}\n")
+        else:
+            f.write(f"\n-ln(Likelihood) = {best_value:.6e}\n")
+            f.write(f"chi^2           = {2*best_value:.6e}\n")
 
         # Model predictions at maximum likelihood
         try:

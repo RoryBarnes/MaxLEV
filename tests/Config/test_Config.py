@@ -235,6 +235,76 @@ class TestMaxLEVConfigFromJson:
             Path(config_path).unlink()
 
 
+class TestParameterConfigPrior:
+    """Tests for ParameterConfig prior field."""
+
+    def test_default_prior_is_none(self):
+        """Prior defaults to None when not specified."""
+        param = ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun')
+        assert param.prior is None
+
+    def test_stores_gaussian_prior(self):
+        """Prior dict is stored when specified."""
+        dictPrior = {"type": "gaussian", "mean": 1.0, "std": 0.1}
+        param = ParameterConfig(
+            name='star.dMass', bounds=(0.5, 1.5), units='Msun',
+            prior=dictPrior,
+        )
+        assert param.prior == dictPrior
+
+    def test_loads_prior_from_json(self):
+        """Loads prior dict from JSON config."""
+        config_data = {
+            'parameters': [{
+                'name': 'star.dMass',
+                'bounds': [0.5, 1.5],
+                'units': 'Msun',
+                'prior': {
+                    'type': 'asymmetric_gaussian',
+                    'mean': 1.0,
+                    'std_upper': 0.2,
+                    'std_lower': 0.1,
+                }
+            }],
+            'outputs': [],
+            'observables': [],
+        }
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = MaxLEVConfig.from_json(config_path)
+            assert config.parameters[0].prior is not None
+            assert config.parameters[0].prior['type'] == 'asymmetric_gaussian'
+            assert config.parameters[0].prior['mean'] == 1.0
+        finally:
+            Path(config_path).unlink()
+
+    def test_missing_prior_stays_none(self):
+        """Parameters without 'prior' key have None prior."""
+        config_data = {
+            'parameters': [{
+                'name': 'star.dMass',
+                'bounds': [0.5, 1.5],
+                'units': 'Msun',
+            }],
+            'outputs': [],
+            'observables': [],
+        }
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = MaxLEVConfig.from_json(config_path)
+            assert config.parameters[0].prior is None
+        finally:
+            Path(config_path).unlink()
+
+
 class TestInpathResolution:
     """Tests for inpath resolution relative to config file."""
 

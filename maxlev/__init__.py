@@ -10,7 +10,9 @@ __author__ = "Claude Code"
 from .config import MaxLEVConfig
 from .model import MaxLEVModel, AllSimulationsFailedError
 from .optimizer import Optimizer
+from .prior import PriorCollection, flistCreatePriors
 
 __all__ = [
-    'MaxLEVConfig', 'MaxLEVModel', 'AllSimulationsFailedError', 'Optimizer'
+    'MaxLEVConfig', 'MaxLEVModel', 'AllSimulationsFailedError', 'Optimizer',
+    'PriorCollection', 'flistCreatePriors',
 ]

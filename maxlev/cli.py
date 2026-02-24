@@ -53,6 +53,7 @@ def main():
     from .observables import ObservableComputer
     from .model import MaxLEVModel, AllSimulationsFailedError
     from .optimizer import Optimizer
+    from .prior import flistCreatePriors
 
     # Load configuration
     config_path = Path(args.config)
@@ -116,14 +117,32 @@ def main():
 
     likelihood_model = create_likelihood(config.likelihood, config.observables)
     observable_computer = ObservableComputer(output_names, config.observables)
-    model = MaxLEVModel(config, likelihood_model, observable_computer)
+
+    # Build priors from per-parameter config
+    listPriorConfigs = [
+        p.prior if p.prior is not None else {"type": "uniform"}
+        for p in config.parameters
+    ]
+    priorCollection = flistCreatePriors(listPriorConfigs)
+    model = MaxLEVModel(
+        config, likelihood_model, observable_computer,
+        prior_collection=priorCollection,
+    )
     print("[OK] VPlanet model initialized")
+
+    # Choose objective: MAP when priors exist, MLE otherwise
+    if priorCollection.fbHasPriors():
+        print("[OK] Priors detected: optimizing posterior (MAP)")
+        objectiveFunction = model.fdNegLogPosterior
+    else:
+        print("[OK] No priors: optimizing likelihood (MLE)")
+        objectiveFunction = model.neg_log_likelihood
 
     # Run optimization
     optimizer = Optimizer(config.optimizer)
     try:
         best_params, best_value, result_info = optimizer.optimize(
-            model.neg_log_likelihood,
+            objectiveFunction,
             model.bounds,
             model.param_names
         )
@@ -144,27 +163,47 @@ def main():
 
     # Report results
     _fnReportResults(
-        best_params, best_value, config, model, config.output_settings
+        best_params, best_value, config, model, config.output_settings,
+        prior_collection=priorCollection,
     )
 
 
-def _fnReportResults(best_params, best_value, config, model, output_settings):
+def _fnReportResults(best_params, best_value, config, model, output_settings,
+                     prior_collection=None):
     """Print results, save files, and report success."""
     from .output import save_results, plot_evolution
 
+    bHasPriors = prior_collection is not None and prior_collection.fbHasPriors()
+
     print("\n" + "=" * 70)
-    print("Maximum Likelihood Results")
+    if bHasPriors:
+        print("Maximum A Posteriori (MAP) Results")
+    else:
+        print("Maximum Likelihood Results")
     print("=" * 70)
     for i, param in enumerate(config.parameters):
         print(f"{param.name:30s} = {best_params[i]:.6e}")
-    print(f"\n-ln(Likelihood) = {best_value:.6e}")
-    print(f"chi^2           = {2*best_value:.6e}")
 
-    save_results(best_params, best_value, config, model, output_settings)
+    if bHasPriors:
+        dNegLogLike = model.neg_log_likelihood(best_params)
+        dNegLogPrior = prior_collection.fdNegLogPrior(best_params)
+        print(f"\n-ln(Posterior)  = {best_value:.6e}")
+        print(f"-ln(Likelihood) = {dNegLogLike:.6e}")
+        print(f"-ln(Prior)      = {dNegLogPrior:.6e}")
+        print(f"chi^2           = {2*dNegLogLike:.6e}")
+    else:
+        print(f"\n-ln(Likelihood) = {best_value:.6e}")
+        print(f"chi^2           = {2*best_value:.6e}")
+
+    save_results(best_params, best_value, config, model, output_settings,
+                 prior_collection=prior_collection)
     plot_evolution(best_params, config, model, output_settings)
 
     print("\n" + "=" * 70)
-    print("Maximum likelihood estimation completed successfully!")
+    if bHasPriors:
+        print("MAP estimation completed successfully!")
+    else:
+        print("Maximum likelihood estimation completed successfully!")
     print("=" * 70 + "\n")
 
 

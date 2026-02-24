@@ -212,6 +212,24 @@ class TestObservableComputer:
 
         assert abs(result['NumpyExp'] - np.e) < 1e-10
 
+    def test_compute_derived_with_dotted_names(self):
+        """Test derived expressions with dotted output names (e.g. final.star.Luminosity)."""
+        output_names = ['final.star.LXUVStellar', 'final.star.Luminosity']
+        observables = [
+            ObservableConfig(
+                name='log_ratio',
+                type='derived',
+                expression='log10(final.star.LXUVStellar / final.star.Luminosity)',
+                observed_value=-4.26,
+                uncertainty=0.15
+            )
+        ]
+        computer = ObservableComputer(output_names, observables)
+        outputs = np.array([2.43e-7, 4.43e-3])
+        result = computer.compute(outputs)
+        dExpected = np.log10(2.43e-7 / 4.43e-3)
+        assert abs(result['log_ratio'] - dExpected) < 1e-10
+
     def test_eval_expression_invalid_raises(self):
         """Test that invalid expressions raise ValueError."""
         output_names = ['x']

@@ -14,6 +14,7 @@ class ParameterConfig:
     bounds: Tuple[float, float]
     units: str
     description: Optional[str] = None
+    prior: Optional[Dict[str, Any]] = None
 
     @property
     def file_name(self) -> str:
@@ -100,7 +101,8 @@ class MaxLEVConfig:
             name=p['name'],
             bounds=tuple(p['bounds']),
             units=p['units'],
-            description=p.get('description')
+            description=p.get('description'),
+            prior=p.get('prior'),
         ) for p in data.get('parameters', [])]
 
         outputs = [OutputConfig(

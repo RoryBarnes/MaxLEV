@@ -430,5 +430,70 @@ class TestFailureTracking:
         assert model.iFailureCheckWindow == 5
 
 
+class TestNegLogPosterior:
+    """Tests for fdNegLogPosterior method."""
+
+    @patch('maxlev.model.vpi')
+    def test_returns_likelihood_when_no_priors(self, mock_vpi):
+        """Without priors, posterior equals likelihood."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.return_value = np.array([0.1, 1.0])
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        likelihood = MagicMock()
+        likelihood.compute.return_value = 0.5
+        observable_computer = MagicMock()
+        observable_computer.compute.return_value = {'Eccentricity': 0.1}
+
+        model = MaxLEVModel(config, likelihood, observable_computer)
+        result = model.fdNegLogPosterior(np.array([1.0, 0.2]))
+
+        assert result == 0.5
+
+    @patch('maxlev.model.vpi')
+    def test_adds_prior_to_likelihood(self, mock_vpi):
+        """With priors, posterior = likelihood + prior."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.return_value = np.array([0.1, 1.0])
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        likelihood = MagicMock()
+        likelihood.compute.return_value = 0.5
+        observable_computer = MagicMock()
+        observable_computer.compute.return_value = {'Eccentricity': 0.1}
+
+        prior_collection = MagicMock()
+        prior_collection.fdNegLogPrior.return_value = 0.3
+
+        model = MaxLEVModel(
+            config, likelihood, observable_computer,
+            prior_collection=prior_collection,
+        )
+        result = model.fdNegLogPosterior(np.array([1.0, 0.2]))
+
+        assert result == pytest.approx(0.8)
+
+    @patch('maxlev.model.vpi')
+    def test_returns_penalty_when_simulation_fails(self, mock_vpi):
+        """Failed simulation returns penalty without computing prior."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.side_effect = Exception("Failed")
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        prior_collection = MagicMock()
+
+        model = MaxLEVModel(
+            config, MagicMock(), MagicMock(),
+            prior_collection=prior_collection,
+        )
+        result = model.fdNegLogPosterior(np.array([1.0, 0.2]))
+
+        assert result == 1e10
+        prior_collection.fdNegLogPrior.assert_not_called()
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

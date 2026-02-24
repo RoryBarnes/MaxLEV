@@ -50,6 +50,9 @@ class ObservableComputer:
         """
         Safely evaluate a mathematical expression.
 
+        Dotted variable names (e.g. final.star.Luminosity) are replaced
+        with underscored identifiers so Python's eval can resolve them.
+
         Args:
             expr: Expression string
             namespace: Dict of variables available in expression
@@ -57,7 +60,6 @@ class ObservableComputer:
         Returns:
             Evaluated result
         """
-        # Build safe evaluation environment
         safe_dict = {
             '__builtins__': {},
             'log10': np.log10,
@@ -67,10 +69,14 @@ class ObservableComputer:
             'abs': abs,
             'np': np,
         }
-        safe_dict.update(namespace)
+        sSanitizedExpr = expr
+        for sKey, dValue in namespace.items():
+            sSanitized = sKey.replace('.', '_')
+            safe_dict[sSanitized] = dValue
+            sSanitizedExpr = sSanitizedExpr.replace(sKey, sSanitized)
 
         try:
-            result = eval(expr, safe_dict)
+            result = eval(sSanitizedExpr, safe_dict)
             return float(result)
         except Exception as e:
             raise ValueError(f"Failed to evaluate expression '{expr}': {e}")
