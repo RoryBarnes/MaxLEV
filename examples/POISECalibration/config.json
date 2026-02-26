@@ -1,0 +1,149 @@
+{
+    "name": "POISECalibration",
+    "vplanet": {
+        "inpath": ".",
+        "executable": "vplanet",
+        "vplfile": "vpl.in",
+        "verbose": false,
+        "timeout": 600
+    },
+    "parameters": [
+        {
+            "name": "dIceAlbedo",
+            "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+            "bounds": [0.4, 0.8],
+            "units": "",
+            "description": "Ice albedo"
+        },
+        {
+            "name": "dAlbedoLand",
+            "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+            "bounds": [0.2, 0.6],
+            "units": "",
+            "description": "Land albedo"
+        },
+        {
+            "name": "dAlbedoWater",
+            "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+            "bounds": [0.1, 0.5],
+            "units": "",
+            "description": "Water albedo"
+        },
+        {
+            "name": "dDiffusion",
+            "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+            "bounds": [0.4, 0.8],
+            "units": "",
+            "description": "Heat diffusion coefficient"
+        },
+        {
+            "name": "dHeatCapLand",
+            "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+            "bounds": [1e7, 9e7],
+            "units": "",
+            "description": "Heat capacity of land [J/(m^2 K)]"
+        },
+        {
+            "name": "dHeatCapWater",
+            "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+            "bounds": [1e8, 9e8],
+            "units": "",
+            "description": "Heat capacity of water [J/(m^2 K)]"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "final.planet1.TGlobal",
+            "units": "Celsius"
+        },
+        {
+            "name": "final.planet2.TGlobal",
+            "units": "Celsius"
+        },
+        {
+            "name": "final.planet3.TGlobal",
+            "units": "Celsius"
+        },
+        {
+            "name": "final.planet4.TGlobal",
+            "units": "Celsius"
+        },
+        {
+            "name": "final.planet5.TGlobal",
+            "units": "Celsius"
+        },
+        {
+            "name": "final.planet6.TGlobal",
+            "units": "Celsius"
+        }
+    ],
+    "observables": [
+        {
+            "name": "TGlobal_obliq0",
+            "type": "direct",
+            "output": "final.planet1.TGlobal",
+            "observed_value": 27.0,
+            "uncertainty": 1.0
+        },
+        {
+            "name": "TGlobal_obliq15",
+            "type": "direct",
+            "output": "final.planet2.TGlobal",
+            "observed_value": 22.0,
+            "uncertainty": 1.0
+        },
+        {
+            "name": "TGlobal_obliq23",
+            "type": "direct",
+            "output": "final.planet3.TGlobal",
+            "observed_value": 14.0,
+            "uncertainty": 1.0
+        },
+        {
+            "name": "TGlobal_obliq45",
+            "type": "direct",
+            "output": "final.planet4.TGlobal",
+            "observed_value": 5.0,
+            "uncertainty": 1.0
+        },
+        {
+            "name": "TGlobal_obliq60",
+            "type": "direct",
+            "output": "final.planet5.TGlobal",
+            "observed_value": -5.0,
+            "uncertainty": 1.0
+        },
+        {
+            "name": "TGlobal_obliq85",
+            "type": "direct",
+            "output": "final.planet6.TGlobal",
+            "observed_value": -15.0,
+            "uncertainty": 1.0
+        }
+    ],
+    "likelihood": {
+        "type": "gaussian",
+        "failure_penalty": 1e10,
+        "failure_check_window": 20
+    },
+    "optimizer": {
+        "algorithm": "differential_evolution",
+        "seed": 42,
+        "maxiter": 200,
+        "tol": 0.001,
+        "de_settings": {
+            "strategy": "best1bin",
+            "popsize": 5,
+            "mutation": [0.5, 1.0],
+            "recombination": 0.7,
+            "workers": 8,
+            "updating": "deferred",
+            "polish": true,
+            "disp": true
+        }
+    },
+    "output": {
+        "results_file": "results.txt",
+        "plot_evolution": false
+    }
+}

@@ -8,6 +8,13 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 
+def _flistFileNamesForParameter(param) -> List[str]:
+    """Return all body file names a parameter writes to."""
+    if param.bIsShared:
+        return list(param.bodies)
+    return [param.file_name]
+
+
 def fnGenerateMaxLEVInputFiles(daBestParams: np.ndarray, config) -> List[str]:
     """
     Generate *_maxlev.in files with maximum likelihood parameter values.
@@ -22,13 +29,15 @@ def fnGenerateMaxLEVInputFiles(daBestParams: np.ndarray, config) -> List[str]:
     sInpath = config.vplanet.get('inpath', '.')
     listGeneratedFiles = []
 
-    # Group parameters by file
+    # Group parameters by file (shared params go to every listed body)
     dictParamsByFile = {}
     for i, param in enumerate(config.parameters):
-        sFileName = param.file_name
-        if sFileName not in dictParamsByFile:
-            dictParamsByFile[sFileName] = []
-        dictParamsByFile[sFileName].append((param.param_name, daBestParams[i]))
+        for sFileName in _flistFileNamesForParameter(param):
+            if sFileName not in dictParamsByFile:
+                dictParamsByFile[sFileName] = []
+            dictParamsByFile[sFileName].append(
+                (param.param_name, daBestParams[i])
+            )
 
     # Process each file that has parameters to update
     for sFileName, listParams in dictParamsByFile.items():
@@ -147,7 +156,10 @@ def save_results(best_params: np.ndarray, best_value: float,
             f.write("Maximum Likelihood Parameters:\n")
         f.write("-" * 70 + "\n")
         for i, param in enumerate(config.parameters):
-            f.write(f"{param.name:30s} = {best_params[i]:.6e}\n")
+            sSharedTag = ""
+            if param.bIsShared:
+                sSharedTag = f"  [shared: {', '.join(param.bodies)}]"
+            f.write(f"{param.name:30s} = {best_params[i]:.6e}{sSharedTag}\n")
 
         if bHasPriors:
             dNegLogLike = model.neg_log_likelihood(best_params)

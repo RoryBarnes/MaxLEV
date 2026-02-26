@@ -1,0 +1,9 @@
+# sun parameters
+sName        sun # star name
+dMass        1 # solar mass
+dSemi        0 # central body
+dEcc         0 # eccentricity
+dRadius      -109 # solar radius
+dLuminosity  -1 # solar luminosity
+sStellarModel none # use defaults
+saModules    stellar # stellar module

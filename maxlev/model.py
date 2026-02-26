@@ -14,6 +14,29 @@ class AllSimulationsFailedError(RuntimeError):
     pass
 
 
+def _fiaBuildExpansionMap(listParameters):
+    """
+    Build index map from expanded positions to free-parameter indices.
+
+    For shared params with N bodies, N consecutive expanded positions all
+    map back to the same free-parameter index.
+
+    Returns:
+        List[int] where map[j] = free-parameter index for expanded pos j.
+        None if no expansion is needed (all params are non-shared).
+    """
+    iaMap = []
+    bHasShared = False
+    for iFree, param in enumerate(listParameters):
+        iExpansionCount = len(param.flistExpandedNames())
+        if iExpansionCount > 1:
+            bHasShared = True
+        iaMap.extend([iFree] * iExpansionCount)
+    if not bHasShared:
+        return None
+    return iaMap
+
+
 class MaxLEVModel:
     """Wrapper around vplanet_inference.VplanetModel for MLE."""
 
@@ -49,9 +72,12 @@ class MaxLEVModel:
             verbose=config.vplanet.get('verbose', False),
         )
 
-        # Store bounds as numpy array
+        # Store bounds as numpy array (free-parameter space)
         self.bounds = np.array([p.bounds for p in config.parameters])
         self.param_names = [p.name for p in config.parameters]
+
+        # Build expansion map for shared parameters
+        self.iaExpansionMap = _fiaBuildExpansionMap(config.parameters)
 
         # Store conversion factors (sorted alphabetically to match output order)
         sorted_outputs = sorted(config.outputs, key=lambda x: x.name)
@@ -72,6 +98,12 @@ class MaxLEVModel:
             if not (self.bounds[i, 0] <= val <= self.bounds[i, 1]):
                 return False
         return True
+
+    def _fdaExpandTheta(self, daTheta: np.ndarray) -> np.ndarray:
+        """Replicate free-parameter values into expanded theta."""
+        if self.iaExpansionMap is None:
+            return daTheta
+        return np.array([daTheta[i] for i in self.iaExpansionMap])
 
     def _fiTimedSubprocessCall(self, *args, **kwargs):
         """Replace subprocess.call with timeout and output suppression."""
@@ -96,13 +128,14 @@ class MaxLEVModel:
         Returns:
             Output array (alphabetically sorted!) or None if failed
         """
+        daExpandedTheta = self._fdaExpandTheta(theta)
         fnOriginalCall = subprocess.call
         subprocess.call = self._fiTimedSubprocessCall
         iOldStderrFd = os.dup(2)
         iDevNullFd = os.open(os.devnull, os.O_WRONLY)
         os.dup2(iDevNullFd, 2)
         try:
-            outputs = self.vpm.run_model(theta, remove=True)
+            outputs = self.vpm.run_model(daExpandedTheta, remove=True)
             outputs *= self.daConversionFactors
             return outputs
         except Exception:

@@ -15,16 +15,32 @@ class ParameterConfig:
     units: str
     description: Optional[str] = None
     prior: Optional[Dict[str, Any]] = None
+    bodies: Optional[List[str]] = None
+
+    @property
+    def bIsShared(self) -> bool:
+        """True when parameter is shared across multiple bodies."""
+        return self.bodies is not None and len(self.bodies) > 0
 
     @property
     def file_name(self) -> str:
         """Extract file name: 'star.dMass' -> 'star'"""
+        if self.bIsShared:
+            return self.bodies[0]
         return self.name.split('.')[0]
 
     @property
     def param_name(self) -> str:
         """Extract parameter name: 'star.dMass' -> 'dMass'"""
+        if self.bIsShared:
+            return self.name
         return self.name.split('.')[1] if '.' in self.name else self.name
+
+    def flistExpandedNames(self) -> List[str]:
+        """Return list of body.param names for vplanet_inference."""
+        if self.bIsShared:
+            return [f"{sBody}.{self.name}" for sBody in self.bodies]
+        return [self.name]
 
     @property
     def is_log_space(self) -> bool:
@@ -103,6 +119,7 @@ class MaxLEVConfig:
             units=p['units'],
             description=p.get('description'),
             prior=p.get('prior'),
+            bodies=p.get('bodies'),
         ) for p in data.get('parameters', [])]
 
         outputs = [OutputConfig(
@@ -163,11 +180,33 @@ class MaxLEVConfig:
             if obs.uncertainty is None and not obs.is_asymmetric:
                 errors.append((f"Observable '{obs.name}' has no uncertainty specified", 0))
 
+        # Validate shared parameter format
+        for param in self.parameters:
+            if param.bIsShared:
+                if '.' in param.name:
+                    errors.append((
+                        f"Shared parameter '{param.name}' must not use "
+                        f"'body.param' format (use just the option name)",
+                        0,
+                    ))
+                if len(param.bodies) < 2:
+                    errors.append((
+                        f"Shared parameter '{param.name}' needs at least "
+                        f"2 bodies (got {len(param.bodies)})",
+                        0,
+                    ))
+
+        # Expand shared params into body.param entries for validation
+        listExpandedParams = []
+        for param in self.parameters:
+            for sExpandedName in param.flistExpandedNames():
+                listExpandedParams.append({'name': sExpandedName})
+
         # VPlanet validation
         vplanet_exec = self.vplanet.get('executable', 'vplanet')
         config_dict = {
             'vplanet': self.vplanet,
-            'parameters': [{'name': p.name} for p in self.parameters],
+            'parameters': listExpandedParams,
             'outputs': [{'name': o.name} for o in self.outputs],
             'observables': [{'name': ob.name, 'type': ob.type, 'output': ob.output, 'expression': ob.expression}
                           for ob in self.observables]

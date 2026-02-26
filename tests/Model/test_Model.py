@@ -495,5 +495,113 @@ class TestNegLogPosterior:
         prior_collection.fdNegLogPrior.assert_not_called()
 
 
+class TestExpansionMap:
+    """Tests for shared parameter expansion map and theta expansion."""
+
+    def test_no_expansion_without_shared(self):
+        """Test that expansion map is None when no shared params."""
+        from maxlev.model import _fiaBuildExpansionMap
+        params = [
+            ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun'),
+            ParameterConfig(name='planet.dEcc', bounds=(0.0, 0.5), units='dimensionless'),
+        ]
+        assert _fiaBuildExpansionMap(params) is None
+
+    def test_expansion_map_shared(self):
+        """Test expansion map for shared parameters."""
+        from maxlev.model import _fiaBuildExpansionMap
+        params = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+                bodies=['p1', 'p2', 'p3'],
+            ),
+            ParameterConfig(
+                name='star.dMass', bounds=(0.5, 1.5), units='Msun',
+            ),
+        ]
+        iaMap = _fiaBuildExpansionMap(params)
+        assert iaMap == [0, 0, 0, 1]
+
+    def test_expansion_map_all_shared(self):
+        """Test expansion map with all shared parameters."""
+        from maxlev.model import _fiaBuildExpansionMap
+        params = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+                bodies=['p1', 'p2'],
+            ),
+            ParameterConfig(
+                name='dDiffusion', bounds=(0.4, 0.8), units='',
+                bodies=['p1', 'p2'],
+            ),
+        ]
+        iaMap = _fiaBuildExpansionMap(params)
+        assert iaMap == [0, 0, 1, 1]
+
+    @patch('maxlev.model.vpi')
+    def test_expand_theta_replicates_values(self, mock_vpi):
+        """Test that _fdaExpandTheta replicates free params correctly."""
+        mock_vpi.VplanetModel.return_value = MagicMock()
+
+        config = MockConfig()
+        config.parameters = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['p1', 'p2', 'p3'],
+            ),
+            ParameterConfig(
+                name='star.dMass', bounds=(0.5, 1.5), units='Msun',
+            ),
+        ]
+        config.outputs = [
+            OutputConfig(name='final.p1.TGlobal', units='Celsius', conversion_factor=1.0),
+        ]
+
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        daTheta = np.array([0.6, 1.0])
+        daExpanded = model._fdaExpandTheta(daTheta)
+
+        np.testing.assert_array_equal(daExpanded, [0.6, 0.6, 0.6, 1.0])
+
+    @patch('maxlev.model.vpi')
+    def test_expand_theta_passthrough_when_no_shared(self, mock_vpi):
+        """Test that _fdaExpandTheta returns input when no shared params."""
+        mock_vpi.VplanetModel.return_value = MagicMock()
+
+        config = MockConfig()
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        daTheta = np.array([1.0, 0.2])
+        daResult = model._fdaExpandTheta(daTheta)
+
+        np.testing.assert_array_equal(daResult, daTheta)
+
+    @patch('maxlev.model.vpi')
+    def test_run_simulation_expands_theta(self, mock_vpi):
+        """Test that run_simulation passes expanded theta to vpm."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.return_value = np.array([10.0])
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        config.parameters = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['p1', 'p2'],
+            ),
+        ]
+        config.outputs = [
+            OutputConfig(name='final.p1.TGlobal', units='Celsius', conversion_factor=1.0),
+        ]
+
+        model = MaxLEVModel(config, MagicMock(), MagicMock())
+
+        model.run_simulation(np.array([0.6]))
+
+        daCalledTheta = mock_vpm.run_model.call_args[0][0]
+        np.testing.assert_array_equal(daCalledTheta, [0.6, 0.6])
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

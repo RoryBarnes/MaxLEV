@@ -73,7 +73,17 @@ def main():
     config = MaxLEVConfig.from_json(str(config_path))
 
     print(f"  Name: {config.name}")
-    print(f"  Parameters: {len(config.parameters)}")
+    iSharedCount = sum(1 for p in config.parameters if p.bIsShared)
+    iExpandedCount = sum(
+        len(p.flistExpandedNames()) for p in config.parameters
+    )
+    if iSharedCount > 0:
+        print(
+            f"  Parameters: {len(config.parameters)} free "
+            f"({iSharedCount} shared, {iExpandedCount} expanded)"
+        )
+    else:
+        print(f"  Parameters: {len(config.parameters)}")
     print(f"  Observables: {len(config.observables)}")
 
     # Apply command-line overrides
@@ -182,7 +192,10 @@ def _fnReportResults(best_params, best_value, config, model, output_settings,
         print("Maximum Likelihood Results")
     print("=" * 70)
     for i, param in enumerate(config.parameters):
-        print(f"{param.name:30s} = {best_params[i]:.6e}")
+        sSharedTag = ""
+        if param.bIsShared:
+            sSharedTag = f"  [shared: {', '.join(param.bodies)}]"
+        print(f"{param.name:30s} = {best_params[i]:.6e}{sSharedTag}")
 
     if bHasPriors:
         dNegLogLike = model.neg_log_likelihood(best_params)

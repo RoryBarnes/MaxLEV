@@ -140,8 +140,8 @@ class TestGenerateMaxLEVInputFiles:
             config = MagicMock()
             config.vplanet = {'inpath': tmpdir}
             config.parameters = [
-                MagicMock(file_name='earth', param_name='dTMan'),
-                MagicMock(file_name='earth', param_name='dTCMB'),
+                MagicMock(bIsShared=False, file_name='earth', param_name='dTMan'),
+                MagicMock(bIsShared=False, file_name='earth', param_name='dTCMB'),
             ]
 
             best_params = np.array([3000.0, 4500.0])
@@ -167,8 +167,8 @@ class TestGenerateMaxLEVInputFiles:
             config = MagicMock()
             config.vplanet = {'inpath': tmpdir}
             config.parameters = [
-                MagicMock(file_name='star', param_name='dLuminosity'),
-                MagicMock(file_name='planet', param_name='dMass'),
+                MagicMock(bIsShared=False, file_name='star', param_name='dLuminosity'),
+                MagicMock(bIsShared=False, file_name='planet', param_name='dMass'),
             ]
 
             best_params = np.array([0.9, 1.5])
@@ -184,7 +184,7 @@ class TestGenerateMaxLEVInputFiles:
             config = MagicMock()
             config.vplanet = {'inpath': tmpdir}
             config.parameters = [
-                MagicMock(file_name='nonexistent', param_name='dParam'),
+                MagicMock(bIsShared=False, file_name='nonexistent', param_name='dParam'),
             ]
 
             best_params = np.array([100.0])
@@ -200,6 +200,8 @@ class MockParam:
         self.bounds = bounds
         self.file_name = file_name or name.split('.')[0]
         self.param_name = param_name or (name.split('.')[1] if '.' in name else name)
+        self.bIsShared = False
+        self.bodies = None
 
 
 class MockObservable:
@@ -460,6 +462,92 @@ class TestPlotEvolution:
                 plot_evolution(np.array([4.5]), config, model, output_settings)
 
                 mock_fig.savefig.assert_called_once()
+
+
+class TestSharedParameterOutput:
+    """Tests for shared parameter output file generation."""
+
+    def test_generates_files_for_all_bodies(self):
+        """Test that shared params write to every body file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for sName in ['planet1', 'planet2', 'planet3']:
+                pathFile = Path(tmpdir) / f"{sName}.in"
+                pathFile.write_text("dIceAlbedo 0.5\n")
+
+            config = MagicMock()
+            config.vplanet = {'inpath': tmpdir}
+            config.parameters = [
+                MagicMock(
+                    bIsShared=True,
+                    bodies=['planet1', 'planet2', 'planet3'],
+                    param_name='dIceAlbedo',
+                    file_name='planet1',
+                ),
+            ]
+
+            best_params = np.array([0.65])
+            result = fnGenerateMaxLEVInputFiles(best_params, config)
+
+            assert len(result) == 3
+            for sName in ['planet1', 'planet2', 'planet3']:
+                pathOutput = Path(tmpdir) / f"{sName}_maxlev.in"
+                assert pathOutput.exists()
+                sContent = pathOutput.read_text()
+                assert '0.65' in sContent
+
+    def test_mixed_shared_and_non_shared(self):
+        """Test output with both shared and non-shared params."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "planet1.in").write_text("dIceAlbedo 0.5\n")
+            (Path(tmpdir) / "planet2.in").write_text("dIceAlbedo 0.5\n")
+            (Path(tmpdir) / "star.in").write_text("dMass 1.0\n")
+
+            config = MagicMock()
+            config.vplanet = {'inpath': tmpdir}
+            config.parameters = [
+                MagicMock(
+                    bIsShared=True,
+                    bodies=['planet1', 'planet2'],
+                    param_name='dIceAlbedo',
+                    file_name='planet1',
+                ),
+                MagicMock(
+                    bIsShared=False,
+                    bodies=None,
+                    param_name='dMass',
+                    file_name='star',
+                ),
+            ]
+
+            best_params = np.array([0.65, 0.9])
+            result = fnGenerateMaxLEVInputFiles(best_params, config)
+
+            assert len(result) == 3
+            assert (Path(tmpdir) / "planet1_maxlev.in").exists()
+            assert (Path(tmpdir) / "planet2_maxlev.in").exists()
+            assert (Path(tmpdir) / "star_maxlev.in").exists()
+
+    def test_flistFileNamesForParameter_shared(self):
+        """Test helper returns all bodies for shared param."""
+        from maxlev.output import _flistFileNamesForParameter
+
+        param = MagicMock()
+        param.bIsShared = True
+        param.bodies = ['planet1', 'planet2', 'planet3']
+
+        result = _flistFileNamesForParameter(param)
+        assert result == ['planet1', 'planet2', 'planet3']
+
+    def test_flistFileNamesForParameter_non_shared(self):
+        """Test helper returns single file for non-shared param."""
+        from maxlev.output import _flistFileNamesForParameter
+
+        param = MagicMock()
+        param.bIsShared = False
+        param.file_name = 'earth'
+
+        result = _flistFileNamesForParameter(param)
+        assert result == ['earth']
 
 
 if __name__ == '__main__':

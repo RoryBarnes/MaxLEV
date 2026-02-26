@@ -1,0 +1,46 @@
+sName        	planet3 # body name
+saModules   	poise # climate module
+dMass        	-1. # Earth mass
+dRotPeriod  	-1.00000 # Earth rotation
+dObliquity  	23.44 # obliquity in degrees
+dSemi       	1.00000011 # semi-major axis in AU
+dEcc        	0.0167 # eccentricity
+dDynEllip    	3.28e-3 # dynamical ellipticity
+dPrecA     	0.0 # precession angle
+dRefHeight 	400 # reference height in m
+
+# POISE parameters
+iLatCellNum  	150 # latitude cells
+dTGlobalInit 	14.85 # initial global temperature in C
+sOLRModel    	WK97 # OLR parametrization
+dpCO2        	0.00028 # CO2 partial pressure in bar
+sGeography   	modern # modern Earth geography
+sClimateModel   sea # seasonal energy advection
+iNumYears       4 # years per climate step
+iNStepInYear    60 # timesteps per year
+
+# Ice parameters
+bIceSheets      1 # enable ice sheets
+dInitIceLat     90. # initial ice latitude
+dInitIceHeight  0. # initial ice height
+bSeaIceModel    0 # disable sea ice model
+dIceDepRate     2.25e-5 # ice deposition rate
+iIceDt          5 # ice dynamics timestep in years
+iReRunSeas      500 # seasonal re-runs for equilibration
+bElevFB 	0 # elevation feedback off
+
+# Surface properties (optimized by MaxLEV)
+dIceAlbedo   	0.6 # ice albedo
+dAlbedoLand   	0.3 # land albedo
+dAlbedoWater    0.3 # water albedo
+dHeatCapLand   	5e7 # heat capacity of land [J/(m^2 K)]
+dHeatCapWater 	5e8 # heat capacity of water [J/(m^2 K)]
+dMixingDepth 	70 # ocean mixing depth in m
+
+# Heat diffusion
+dNuLandWater 	0.8 # land-water diffusion coefficient
+dDiffusion 	0.6 # heat diffusion coefficient
+
+# Output options
+dSeasOutputTime 0 # seasonal output disabled
+saOutputOrder    Time Ecce Obliq PrecA -TGlobal AlbedoGlobal -FluxOutGlobal -TotIceMass DeltaTime # output columns

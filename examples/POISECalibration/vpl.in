@@ -1,0 +1,16 @@
+sSystemName   poiseCalib # system name
+iVerbose      5 # verbosity level
+iDigits       16 # output precision
+bOverwrite    1 # overwrite existing output
+sUnitMass     solar # mass units
+sUnitLength   au # length units
+sUnitTime     y # time units
+sUnitAngle    d # angle units
+sUnitTemp     C # temperature units
+bDoLog        1 # write log file
+saBodyFiles   sun.in planet1.in planet2.in planet3.in planet4.in planet5.in planet6.in # body input files
+bDoForward    1 # forward integration
+bVarDt        1 # variable timestep
+dEta          0.01 # CFL parameter
+dStopTime     1e4 # stop time in years
+dOutputTime   1e4 # output interval in years

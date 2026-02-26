@@ -87,7 +87,12 @@ def build_inparams_dict(parameters: list) -> Dict[str, u.Unit]:
             ...
         }
     """
-    return {p.name: parse_unit_string(p.units) for p in parameters}
+    dictInparams = {}
+    for param in parameters:
+        unitParsed = parse_unit_string(param.units)
+        for sExpandedName in param.flistExpandedNames():
+            dictInparams[sExpandedName] = unitParsed
+    return dictInparams
 
 
 def build_outparams_dict(outputs: list) -> Dict[str, u.Unit]:

@@ -209,5 +209,58 @@ class TestBuildOutparamsDict:
         assert result['final.earth.HeatFlow'] == u.W
 
 
+class TestBuildInparamsDictShared:
+    """Tests for build_inparams_dict with shared parameters."""
+
+    def test_expands_shared_parameter(self):
+        """Test that shared param produces multiple dict entries."""
+        parameters = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['planet1', 'planet2', 'planet3'],
+            ),
+        ]
+
+        result = build_inparams_dict(parameters)
+
+        assert len(result) == 3
+        assert 'planet1.dIceAlbedo' in result
+        assert 'planet2.dIceAlbedo' in result
+        assert 'planet3.dIceAlbedo' in result
+        for sKey in result:
+            assert result[sKey] == u.dimensionless_unscaled
+
+    def test_mixed_shared_and_non_shared(self):
+        """Test dict with both shared and non-shared params."""
+        parameters = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['planet1', 'planet2'],
+            ),
+            ParameterConfig(
+                name='star.dMass', bounds=(0.5, 1.5), units='Msun',
+            ),
+        ]
+
+        result = build_inparams_dict(parameters)
+
+        assert len(result) == 3
+        assert 'planet1.dIceAlbedo' in result
+        assert 'planet2.dIceAlbedo' in result
+        assert 'star.dMass' in result
+        assert result['star.dMass'] == u.Msun
+
+    def test_non_shared_unchanged(self):
+        """Test that non-shared params still work as before."""
+        parameters = [
+            ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun'),
+        ]
+
+        result = build_inparams_dict(parameters)
+
+        assert len(result) == 1
+        assert 'star.dMass' in result
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
