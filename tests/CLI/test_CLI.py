@@ -9,70 +9,70 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from maxlev.cli import parse_args, main
+from maxlev.cli import fParseArgs, main
 
 
 class TestParseArgs:
-    """Tests for parse_args function."""
+    """Tests for fParseArgs function."""
 
     def test_config_required(self):
         """Test that config argument is required."""
         with patch('sys.argv', ['maxlev']):
             with pytest.raises(SystemExit):
-                parse_args()
+                fParseArgs()
 
     def test_config_parsed(self):
         """Test that config path is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.config == 'config.json'
 
     def test_validate_flag(self):
         """Test --validate flag is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '--validate']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.validate is True
 
     def test_verbose_flag(self):
         """Test --verbose flag is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '--verbose']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.verbose is True
 
     def test_verbose_short_flag(self):
         """Test -v flag is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '-v']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.verbose is True
 
     def test_seed_option(self):
         """Test --seed option is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '--seed', '42']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.seed == 42
 
     def test_maxiter_option(self):
         """Test --maxiter option is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '--maxiter', '100']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.maxiter == 100
 
     def test_output_dir_option(self):
         """Test --output-dir option is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '--output-dir', '/tmp/out']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.output_dir == '/tmp/out'
 
     def test_workers_option(self):
         """Test --workers option is parsed."""
         with patch('sys.argv', ['maxlev', 'config.json', '--workers', '4']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.workers == 4
 
     def test_default_values(self):
         """Test default values for optional arguments."""
         with patch('sys.argv', ['maxlev', 'config.json']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.validate is False
             assert args.verbose is False
             assert args.seed is None
@@ -169,7 +169,7 @@ class TestMainOverrides:
         """Test that command line arguments are parsed correctly."""
         with patch('sys.argv', ['maxlev', 'config.json', '--seed', '99',
                                 '--maxiter', '500', '--workers', '4', '-v']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.seed == 99
             assert args.maxiter == 500
             assert args.workers == 4
@@ -178,7 +178,7 @@ class TestMainOverrides:
     def test_output_dir_override(self):
         """Test that --output-dir is parsed correctly."""
         with patch('sys.argv', ['maxlev', 'config.json', '--output-dir', '/custom/path']):
-            args = parse_args()
+            args = fParseArgs()
             assert args.output_dir == '/custom/path'
 
     def test_error_formatting_with_line_number(self):
@@ -242,9 +242,8 @@ class TestFailureReporting:
         mock_model = MagicMock()
         mock_model.iSimulationCount = 50
         mock_model.iSimulationFailureCount = 50
-        mock_config = MagicMock()
 
-        _fnReportFailedOptimization(1e10, mock_model, mock_config)
+        _fnReportFailedOptimization(1e10, mock_model)
 
         captured = capsys.readouterr()
         assert "OPTIMIZATION FAILED" in captured.out

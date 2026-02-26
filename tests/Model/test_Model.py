@@ -44,7 +44,7 @@ class MockConfig:
 
 
 class TestCheckBounds:
-    """Tests for check_bounds method."""
+    """Tests for fbCheckBounds method."""
 
     @patch('maxlev.model.vpi')
     def test_within_bounds_returns_true(self, mock_vpi):
@@ -57,8 +57,8 @@ class TestCheckBounds:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        assert model.check_bounds(theta) is True
+        daTheta = np.array([1.0, 0.2])
+        assert model.fbCheckBounds(daTheta) is True
 
     @patch('maxlev.model.vpi')
     def test_below_lower_bound_returns_false(self, mock_vpi):
@@ -71,8 +71,8 @@ class TestCheckBounds:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([0.3, 0.2])  # star.dMass below 0.5
-        assert model.check_bounds(theta) is False
+        daTheta = np.array([0.3, 0.2])  # star.dMass below 0.5
+        assert model.fbCheckBounds(daTheta) is False
 
     @patch('maxlev.model.vpi')
     def test_above_upper_bound_returns_false(self, mock_vpi):
@@ -85,8 +85,8 @@ class TestCheckBounds:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.6])  # planet.dEcc above 0.5
-        assert model.check_bounds(theta) is False
+        daTheta = np.array([1.0, 0.6])  # planet.dEcc above 0.5
+        assert model.fbCheckBounds(daTheta) is False
 
     @patch('maxlev.model.vpi')
     def test_at_boundary_returns_true(self, mock_vpi):
@@ -99,12 +99,12 @@ class TestCheckBounds:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([0.5, 0.5])  # at lower and upper bounds
-        assert model.check_bounds(theta) is True
+        daTheta = np.array([0.5, 0.5])  # at lower and upper bounds
+        assert model.fbCheckBounds(daTheta) is True
 
 
 class TestNegLogLikelihood:
-    """Tests for neg_log_likelihood method."""
+    """Tests for fdNegLogLikelihood method."""
 
     @patch('maxlev.model.vpi')
     def test_returns_penalty_when_out_of_bounds(self, mock_vpi):
@@ -117,8 +117,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([0.1, 0.2])  # out of bounds
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([0.1, 0.2])  # out of bounds
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 1e10
 
@@ -135,8 +135,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 1e10
 
@@ -153,8 +153,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 1e10
 
@@ -171,8 +171,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 1e10
 
@@ -189,8 +189,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 1e10
 
@@ -210,8 +210,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 0.5
         likelihood.compute.assert_called_once()
@@ -231,8 +231,8 @@ class TestNegLogLikelihood:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        result = model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        result = model.fdNegLogLikelihood(daTheta)
 
         assert result == 1e10
 
@@ -255,7 +255,7 @@ class TestModelInit:
         np.testing.assert_array_equal(model.bounds, expected)
 
     @patch('maxlev.model.vpi')
-    def test_sets_param_names_from_config(self, mock_vpi):
+    def test_sets_listParamNames_from_config(self, mock_vpi):
         """Test that parameter names are set from config."""
         mock_vpi.VplanetModel.return_value = MagicMock()
 
@@ -265,7 +265,7 @@ class TestModelInit:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        assert model.param_names == ['star.dMass', 'planet.dEcc']
+        assert model.listParamNames == ['star.dMass', 'planet.dEcc']
 
     @patch('maxlev.model.vpi')
     def test_sets_timeout_from_config(self, mock_vpi):
@@ -283,7 +283,7 @@ class TestModelInit:
         assert model.iTimeout == 60
 
     @patch('maxlev.model.vpi')
-    def test_sets_failure_penalty_from_config(self, mock_vpi):
+    def test_sets_dFailurePenalty_from_config(self, mock_vpi):
         """Test that failure penalty is set from config."""
         mock_vpi.VplanetModel.return_value = MagicMock()
 
@@ -295,7 +295,7 @@ class TestModelInit:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        assert model.failure_penalty == 1e5
+        assert model.dFailurePenalty == 1e5
 
 
 class TestConversionFactors:
@@ -319,12 +319,12 @@ class TestConversionFactors:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
-        outputs = model.run_simulation(theta)
+        daTheta = np.array([1.0, 0.2])
+        daOutputs = model.fdaRunSimulation(daTheta)
 
-        assert outputs is not None
-        assert outputs[0] == 10.0  # 1.0 * 10.0 (final.planet.Ecc comes first alphabetically)
-        assert outputs[1] == 200.0  # 2.0 * 100.0
+        assert daOutputs is not None
+        assert daOutputs[0] == 10.0  # 1.0 * 10.0 (final.planet.Ecc comes first alphabetically)
+        assert daOutputs[1] == 200.0  # 2.0 * 100.0
 
 
 class TestFailureTracking:
@@ -341,8 +341,8 @@ class TestFailureTracking:
         config.likelihood['failure_check_window'] = 20
         model = MaxLEVModel(config, MagicMock(), MagicMock())
 
-        theta = np.array([1.0, 0.2])
-        model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        model.fdNegLogLikelihood(daTheta)
 
         assert model.iSimulationCount == 1
         assert model.iSimulationFailureCount == 1
@@ -358,11 +358,11 @@ class TestFailureTracking:
         config.likelihood['failure_check_window'] = 3
         model = MaxLEVModel(config, MagicMock(), MagicMock())
 
-        theta = np.array([1.0, 0.2])
-        model.neg_log_likelihood(theta)
-        model.neg_log_likelihood(theta)
+        daTheta = np.array([1.0, 0.2])
+        model.fdNegLogLikelihood(daTheta)
+        model.fdNegLogLikelihood(daTheta)
         with pytest.raises(AllSimulationsFailedError):
-            model.neg_log_likelihood(theta)
+            model.fdNegLogLikelihood(daTheta)
 
     @patch('maxlev.model.vpi')
     def test_no_abort_when_some_succeed(self, mock_vpi):
@@ -388,9 +388,9 @@ class TestFailureTracking:
 
         model = MaxLEVModel(config, likelihood, observable_computer)
 
-        theta = np.array([1.0, 0.2])
+        daTheta = np.array([1.0, 0.2])
         for _ in range(10):
-            model.neg_log_likelihood(theta)
+            model.fdNegLogLikelihood(daTheta)
 
         assert model.iSimulationFailureCount < model.iSimulationCount
 
@@ -402,8 +402,8 @@ class TestFailureTracking:
         config = MockConfig()
         model = MaxLEVModel(config, MagicMock(), MagicMock())
 
-        theta_oob = np.array([0.1, 0.2])
-        model.neg_log_likelihood(theta_oob)
+        daTheta_oob = np.array([0.1, 0.2])
+        model.fdNegLogLikelihood(daTheta_oob)
 
         assert model.iSimulationCount == 0
         assert model.iSimulationFailureCount == 0
@@ -512,7 +512,7 @@ class TestExpansionMap:
         from maxlev.model import _fiaBuildExpansionMap
         params = [
             ParameterConfig(
-                name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
                 bodies=['p1', 'p2', 'p3'],
             ),
             ParameterConfig(
@@ -527,16 +527,35 @@ class TestExpansionMap:
         from maxlev.model import _fiaBuildExpansionMap
         params = [
             ParameterConfig(
-                name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
                 bodies=['p1', 'p2'],
             ),
             ParameterConfig(
-                name='dDiffusion', bounds=(0.4, 0.8), units='',
+                name='dDiffusion', bounds=(0.4, 0.8), units='dimensionless',
                 bodies=['p1', 'p2'],
             ),
         ]
         iaMap = _fiaBuildExpansionMap(params)
         assert iaMap == [0, 0, 1, 1]
+
+    def test_expansion_map_interleaved(self):
+        """Test expansion map with interleaved shared and non-shared."""
+        from maxlev.model import _fiaBuildExpansionMap
+        params = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['p1', 'p2'],
+            ),
+            ParameterConfig(
+                name='star.dMass', bounds=(0.5, 1.5), units='Msun',
+            ),
+            ParameterConfig(
+                name='dDiffusion', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['p1', 'p2', 'p3'],
+            ),
+        ]
+        iaMap = _fiaBuildExpansionMap(params)
+        assert iaMap == [0, 0, 1, 2, 2, 2]
 
     @patch('maxlev.model.vpi')
     def test_expand_theta_replicates_values(self, mock_vpi):
@@ -578,8 +597,8 @@ class TestExpansionMap:
         np.testing.assert_array_equal(daResult, daTheta)
 
     @patch('maxlev.model.vpi')
-    def test_run_simulation_expands_theta(self, mock_vpi):
-        """Test that run_simulation passes expanded theta to vpm."""
+    def test_fdaRunSimulation_expands_theta(self, mock_vpi):
+        """Test that fdaRunSimulation passes expanded theta to vpm."""
         mock_vpm = MagicMock()
         mock_vpm.run_model.return_value = np.array([10.0])
         mock_vpi.VplanetModel.return_value = mock_vpm
@@ -597,10 +616,85 @@ class TestExpansionMap:
 
         model = MaxLEVModel(config, MagicMock(), MagicMock())
 
-        model.run_simulation(np.array([0.6]))
+        model.fdaRunSimulation(np.array([0.6]))
 
         daCalledTheta = mock_vpm.run_model.call_args[0][0]
         np.testing.assert_array_equal(daCalledTheta, [0.6, 0.6])
+
+    @patch('maxlev.model.vpi')
+    def test_fdNegLogLikelihood_with_shared_params(self, mock_vpi):
+        """Test fdNegLogLikelihood works correctly with shared params."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.return_value = np.array([15.0])
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        config.parameters = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['p1', 'p2'],
+            ),
+        ]
+        config.outputs = [
+            OutputConfig(name='final.p1.TGlobal', units='Celsius',
+                         conversion_factor=1.0),
+        ]
+        config.observables = [
+            ObservableConfig(
+                name='TGlobal',
+                type='direct',
+                output='final.p1.TGlobal',
+                observed_value=14.0,
+                uncertainty=1.0,
+            )
+        ]
+
+        likelihood = MagicMock()
+        likelihood.compute.return_value = 0.5
+        observable_computer = MagicMock()
+        observable_computer.compute.return_value = {'TGlobal': 15.0}
+
+        model = MaxLEVModel(config, likelihood, observable_computer)
+        result = model.fdNegLogLikelihood(np.array([0.6]))
+
+        assert result == 0.5
+        daCalledTheta = mock_vpm.run_model.call_args[0][0]
+        np.testing.assert_array_equal(daCalledTheta, [0.6, 0.6])
+
+    @patch('maxlev.model.vpi')
+    def test_fdNegLogPosterior_with_shared_params(self, mock_vpi):
+        """Test fdNegLogPosterior works correctly with shared params."""
+        mock_vpm = MagicMock()
+        mock_vpm.run_model.return_value = np.array([15.0])
+        mock_vpi.VplanetModel.return_value = mock_vpm
+
+        config = MockConfig()
+        config.parameters = [
+            ParameterConfig(
+                name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
+                bodies=['p1', 'p2'],
+            ),
+        ]
+        config.outputs = [
+            OutputConfig(name='final.p1.TGlobal', units='Celsius',
+                         conversion_factor=1.0),
+        ]
+
+        likelihood = MagicMock()
+        likelihood.compute.return_value = 0.5
+        observable_computer = MagicMock()
+        observable_computer.compute.return_value = {'TGlobal': 15.0}
+
+        prior_collection = MagicMock()
+        prior_collection.fdNegLogPrior.return_value = 0.2
+
+        model = MaxLEVModel(
+            config, likelihood, observable_computer,
+            prior_collection=prior_collection,
+        )
+        result = model.fdNegLogPosterior(np.array([0.6]))
+
+        assert result == pytest.approx(0.7)
 
 
 if __name__ == '__main__':

@@ -20,42 +20,55 @@ from maxlev.config import (
 class TestParameterConfig:
     """Tests for ParameterConfig dataclass."""
 
-    def test_file_name_extraction(self):
+    def test_sFileName_extraction(self):
         """Test extracting file name from parameter name."""
         param = ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun')
-        assert param.file_name == 'star'
+        assert param.sFileName == 'star'
 
-    def test_param_name_extraction(self):
+    def test_sParamName_extraction(self):
         """Test extracting param name from full name."""
         param = ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun')
-        assert param.param_name == 'dMass'
+        assert param.sParamName == 'dMass'
 
-    def test_param_name_no_dot(self):
-        """Test param_name when no dot in name."""
+    def test_sParamName_no_dot(self):
+        """Test sParamName when no dot in name."""
         param = ParameterConfig(name='dMass', bounds=(0.5, 1.5), units='Msun')
-        assert param.param_name == 'dMass'
+        assert param.sParamName == 'dMass'
 
-    def test_is_log_space_with_dex(self):
-        """Test is_log_space returns True for dex units."""
+    def test_bIsLogSpace_with_dex(self):
+        """Test bIsLogSpace returns True for dex units."""
         param = ParameterConfig(name='star.dFrac', bounds=(-5, -2), units='dex(dimensionless)')
-        assert param.is_log_space is True
+        assert param.bIsLogSpace is True
 
-    def test_is_log_space_without_dex(self):
-        """Test is_log_space returns False for normal units."""
+    def test_bIsLogSpace_without_dex(self):
+        """Test bIsLogSpace returns False for normal units."""
         param = ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun')
-        assert param.is_log_space is False
+        assert param.bIsLogSpace is False
 
-    def test_is_log_space_case_insensitive(self):
-        """Test is_log_space is case insensitive."""
+    def test_bIsLogSpace_case_insensitive(self):
+        """Test bIsLogSpace is case insensitive."""
         param = ParameterConfig(name='star.dFrac', bounds=(-5, -2), units='DEX(dimensionless)')
-        assert param.is_log_space is True
+        assert param.bIsLogSpace is True
+
+    def test_fsSharedTag_when_shared(self):
+        """Test fsSharedTag returns formatted tag for shared params."""
+        param = ParameterConfig(
+            name='dAlbedo', bounds=(0.2, 0.6), units='dimensionless',
+            bodies=['planet1', 'planet2'],
+        )
+        assert param.fsSharedTag() == "  [shared: planet1, planet2]"
+
+    def test_fsSharedTag_when_not_shared(self):
+        """Test fsSharedTag returns empty string for non-shared params."""
+        param = ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun')
+        assert param.fsSharedTag() == ""
 
 
 class TestObservableConfig:
     """Tests for ObservableConfig dataclass."""
 
-    def test_is_asymmetric_with_both_uncertainties(self):
-        """Test is_asymmetric returns True when both uncertainties specified."""
+    def test_bIsAsymmetric_with_both_uncertainties(self):
+        """Test bIsAsymmetric returns True when both uncertainties specified."""
         obs = ObservableConfig(
             name='test',
             type='direct',
@@ -63,41 +76,41 @@ class TestObservableConfig:
             uncertainty_lower=0.1,
             uncertainty_upper=0.2
         )
-        assert obs.is_asymmetric is True
+        assert obs.bIsAsymmetric is True
 
-    def test_is_asymmetric_with_symmetric(self):
-        """Test is_asymmetric returns False for symmetric uncertainties."""
+    def test_bIsAsymmetric_with_symmetric(self):
+        """Test bIsAsymmetric returns False for symmetric uncertainties."""
         obs = ObservableConfig(
             name='test',
             type='direct',
             observed_value=1.0,
             uncertainty=0.1
         )
-        assert obs.is_asymmetric is False
+        assert obs.bIsAsymmetric is False
 
-    def test_is_asymmetric_with_only_lower(self):
-        """Test is_asymmetric returns False with only lower uncertainty."""
+    def test_bIsAsymmetric_with_only_lower(self):
+        """Test bIsAsymmetric returns False with only lower uncertainty."""
         obs = ObservableConfig(
             name='test',
             type='direct',
             observed_value=1.0,
             uncertainty_lower=0.1
         )
-        assert obs.is_asymmetric is False
+        assert obs.bIsAsymmetric is False
 
-    def test_get_uncertainty_symmetric(self):
-        """Test get_uncertainty returns symmetric uncertainty."""
+    def test_fdGetUncertainty_symmetric(self):
+        """Test fdGetUncertainty returns symmetric uncertainty."""
         obs = ObservableConfig(
             name='test',
             type='direct',
             observed_value=1.0,
             uncertainty=0.1
         )
-        assert obs.get_uncertainty(0.9) == 0.1
-        assert obs.get_uncertainty(1.1) == 0.1
+        assert obs.fdGetUncertainty(0.9) == 0.1
+        assert obs.fdGetUncertainty(1.1) == 0.1
 
-    def test_get_uncertainty_asymmetric_below(self):
-        """Test get_uncertainty returns lower when computed < observed."""
+    def test_fdGetUncertainty_asymmetric_below(self):
+        """Test fdGetUncertainty returns lower when computed < observed."""
         obs = ObservableConfig(
             name='test',
             type='direct',
@@ -105,10 +118,10 @@ class TestObservableConfig:
             uncertainty_lower=0.1,
             uncertainty_upper=0.2
         )
-        assert obs.get_uncertainty(0.9) == 0.1
+        assert obs.fdGetUncertainty(0.9) == 0.1
 
-    def test_get_uncertainty_asymmetric_above(self):
-        """Test get_uncertainty returns upper when computed >= observed."""
+    def test_fdGetUncertainty_asymmetric_above(self):
+        """Test fdGetUncertainty returns upper when computed >= observed."""
         obs = ObservableConfig(
             name='test',
             type='direct',
@@ -116,10 +129,10 @@ class TestObservableConfig:
             uncertainty_lower=0.1,
             uncertainty_upper=0.2
         )
-        assert obs.get_uncertainty(1.1) == 0.2
+        assert obs.fdGetUncertainty(1.1) == 0.2
 
-    def test_get_uncertainty_asymmetric_equal(self):
-        """Test get_uncertainty returns upper when computed == observed."""
+    def test_fdGetUncertainty_asymmetric_equal(self):
+        """Test fdGetUncertainty returns upper when computed == observed."""
         obs = ObservableConfig(
             name='test',
             type='direct',
@@ -127,7 +140,7 @@ class TestObservableConfig:
             uncertainty_lower=0.1,
             uncertainty_upper=0.2
         )
-        assert obs.get_uncertainty(1.0) == 0.2
+        assert obs.fdGetUncertainty(1.0) == 0.2
 
 
 class TestMaxLEVConfigFromJson:
@@ -210,7 +223,7 @@ class TestMaxLEVConfigFromJson:
 
         try:
             config = MaxLEVConfig.from_json(config_path)
-            assert config.observables[0].is_asymmetric is True
+            assert config.observables[0].bIsAsymmetric is True
         finally:
             Path(config_path).unlink()
 
@@ -459,7 +472,7 @@ class TestMaxLEVConfigValidate:
         obs.output = 'nonexistent.output'
         obs.name = 'TestObs'
         obs.uncertainty = 0.1
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         config = MaxLEVConfig(
             name='test',
@@ -486,7 +499,7 @@ class TestMaxLEVConfigValidate:
         obs.output = 'test'
         obs.name = 'TestObs'
         obs.uncertainty = 0.1
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         config = MaxLEVConfig(
             name='test',
@@ -516,7 +529,7 @@ class TestMaxLEVConfigValidate:
         obs.output = 'test'
         obs.name = 'TestObs'
         obs.uncertainty = None
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         config = MaxLEVConfig(
             name='test',
@@ -546,7 +559,7 @@ class TestMaxLEVConfigValidate:
         obs.output = 'final.star.Mass'
         obs.name = 'Mass'
         obs.uncertainty = 0.1
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         mockParam = MagicMock()
         mockParam.bIsShared = False
@@ -573,7 +586,7 @@ class TestSharedParameters:
     def test_bIsShared_true_with_bodies(self):
         """Test bIsShared is True when bodies list is provided."""
         param = ParameterConfig(
-            name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
             bodies=['planet1', 'planet2', 'planet3'],
         )
         assert param.bIsShared is True
@@ -581,14 +594,14 @@ class TestSharedParameters:
     def test_bIsShared_false_without_bodies(self):
         """Test bIsShared is False when bodies is None."""
         param = ParameterConfig(
-            name='earth.dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='earth.dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
         )
         assert param.bIsShared is False
 
     def test_bIsShared_false_for_empty_bodies(self):
         """Test bIsShared is False when bodies list is empty."""
         param = ParameterConfig(
-            name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
             bodies=[],
         )
         assert param.bIsShared is False
@@ -596,7 +609,7 @@ class TestSharedParameters:
     def test_flistExpandedNames_shared(self):
         """Test expanded names for a shared parameter."""
         param = ParameterConfig(
-            name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
             bodies=['planet1', 'planet2', 'planet3'],
         )
         expected = ['planet1.dIceAlbedo', 'planet2.dIceAlbedo',
@@ -606,25 +619,25 @@ class TestSharedParameters:
     def test_flistExpandedNames_non_shared(self):
         """Test expanded names for a non-shared parameter."""
         param = ParameterConfig(
-            name='earth.dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='earth.dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
         )
         assert param.flistExpandedNames() == ['earth.dIceAlbedo']
 
-    def test_param_name_shared(self):
-        """Test param_name returns raw name for shared params."""
+    def test_sParamName_shared(self):
+        """Test sParamName returns raw name for shared params."""
         param = ParameterConfig(
-            name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
             bodies=['planet1', 'planet2'],
         )
-        assert param.param_name == 'dIceAlbedo'
+        assert param.sParamName == 'dIceAlbedo'
 
-    def test_file_name_shared(self):
-        """Test file_name returns first body for shared params."""
+    def test_sFileName_shared(self):
+        """Test sFileName returns first body for shared params."""
         param = ParameterConfig(
-            name='dIceAlbedo', bounds=(0.4, 0.8), units='',
+            name='dIceAlbedo', bounds=(0.4, 0.8), units='dimensionless',
             bodies=['planet1', 'planet2'],
         )
-        assert param.file_name == 'planet1'
+        assert param.sFileName == 'planet1'
 
     def test_loads_bodies_from_json(self):
         """Test loading shared parameter from JSON config."""
@@ -633,7 +646,7 @@ class TestSharedParameters:
                 'name': 'dIceAlbedo',
                 'bodies': ['planet1', 'planet2'],
                 'bounds': [0.4, 0.8],
-                'units': '',
+                'units': 'dimensionless',
             }],
             'outputs': [],
             'observables': [],
@@ -658,7 +671,7 @@ class TestSharedParameters:
             'parameters': [{
                 'name': 'earth.dIceAlbedo',
                 'bounds': [0.4, 0.8],
-                'units': '',
+                'units': 'dimensionless',
             }],
             'outputs': [],
             'observables': [],
@@ -690,7 +703,7 @@ class TestSharedParameters:
         obs.output = 'final.planet1.TGlobal'
         obs.name = 'TGlobal'
         obs.uncertainty = 1.0
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         config = MaxLEVConfig(
             name='test',
@@ -698,7 +711,7 @@ class TestSharedParameters:
             parameters=[ParameterConfig(
                 name='planet1.dIceAlbedo',
                 bounds=(0.4, 0.8),
-                units='',
+                units='dimensionless',
                 bodies=['planet1', 'planet2'],
             )],
             outputs=[output],
@@ -725,7 +738,7 @@ class TestSharedParameters:
         obs.output = 'final.planet1.TGlobal'
         obs.name = 'TGlobal'
         obs.uncertainty = 1.0
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         config = MaxLEVConfig(
             name='test',
@@ -733,7 +746,7 @@ class TestSharedParameters:
             parameters=[ParameterConfig(
                 name='dIceAlbedo',
                 bounds=(0.4, 0.8),
-                units='',
+                units='dimensionless',
                 bodies=['planet1'],
             )],
             outputs=[output],
@@ -760,7 +773,7 @@ class TestSharedParameters:
         obs.output = 'final.planet1.TGlobal'
         obs.name = 'TGlobal'
         obs.uncertainty = 1.0
-        obs.is_asymmetric = False
+        obs.bIsAsymmetric = False
 
         config = MaxLEVConfig(
             name='test',
@@ -768,7 +781,7 @@ class TestSharedParameters:
             parameters=[ParameterConfig(
                 name='dIceAlbedo',
                 bounds=(0.4, 0.8),
-                units='',
+                units='dimensionless',
                 bodies=['planet1', 'planet2'],
             )],
             outputs=[output],
@@ -784,6 +797,83 @@ class TestSharedParameters:
         param_names = [p['name'] for p in call_args['parameters']]
         assert 'planet1.dIceAlbedo' in param_names
         assert 'planet2.dIceAlbedo' in param_names
+
+    @patch('maxlev.config.validation.validate_all')
+    def test_validate_rejects_duplicate_bodies(self, mock_validate):
+        """Test validation error for duplicate body names in shared param."""
+        mock_validate.return_value = []
+
+        output = MagicMock()
+        output.name = 'final.planet1.TGlobal'
+
+        obs = MagicMock()
+        obs.type = 'direct'
+        obs.output = 'final.planet1.TGlobal'
+        obs.name = 'TGlobal'
+        obs.uncertainty = 1.0
+        obs.bIsAsymmetric = False
+
+        config = MaxLEVConfig(
+            name='test',
+            vplanet={},
+            parameters=[ParameterConfig(
+                name='dIceAlbedo',
+                bounds=(0.4, 0.8),
+                units='dimensionless',
+                bodies=['planet1', 'planet2', 'planet1'],
+            )],
+            outputs=[output],
+            observables=[obs],
+            likelihood={},
+            optimizer={},
+            output_settings={},
+        )
+
+        errors = config.validate()
+        error_messages = [e[0] for e in errors]
+        assert any("duplicate" in msg.lower() for msg in error_messages)
+
+    @patch('maxlev.config.validation.validate_all')
+    def test_validate_rejects_shared_nonshared_conflict(self, mock_validate):
+        """Test validation error when shared and non-shared target same body.param."""
+        mock_validate.return_value = []
+
+        output = MagicMock()
+        output.name = 'final.planet1.TGlobal'
+
+        obs = MagicMock()
+        obs.type = 'direct'
+        obs.output = 'final.planet1.TGlobal'
+        obs.name = 'TGlobal'
+        obs.uncertainty = 1.0
+        obs.bIsAsymmetric = False
+
+        config = MaxLEVConfig(
+            name='test',
+            vplanet={},
+            parameters=[
+                ParameterConfig(
+                    name='dIceAlbedo',
+                    bounds=(0.4, 0.8),
+                    units='dimensionless',
+                    bodies=['planet1', 'planet2'],
+                ),
+                ParameterConfig(
+                    name='planet1.dIceAlbedo',
+                    bounds=(0.4, 0.8),
+                    units='dimensionless',
+                ),
+            ],
+            outputs=[output],
+            observables=[obs],
+            likelihood={},
+            optimizer={},
+            output_settings={},
+        )
+
+        errors = config.validate()
+        error_messages = [e[0] for e in errors]
+        assert any("conflict" in msg.lower() for msg in error_messages)
 
 
 if __name__ == '__main__':

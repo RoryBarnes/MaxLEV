@@ -23,18 +23,19 @@ class ParameterConfig:
         return self.bodies is not None and len(self.bodies) > 0
 
     @property
-    def file_name(self) -> str:
+    def sFileName(self) -> str:
         """Extract file name: 'star.dMass' -> 'star'"""
         if self.bIsShared:
             return self.bodies[0]
         return self.name.split('.')[0]
 
     @property
-    def param_name(self) -> str:
+    def sParamName(self) -> str:
         """Extract parameter name: 'star.dMass' -> 'dMass'"""
         if self.bIsShared:
             return self.name
-        return self.name.split('.')[1] if '.' in self.name else self.name
+        parts = self.name.split('.')
+        return parts[1] if len(parts) > 1 else self.name
 
     def flistExpandedNames(self) -> List[str]:
         """Return list of body.param names for vplanet_inference."""
@@ -43,9 +44,15 @@ class ParameterConfig:
         return [self.name]
 
     @property
-    def is_log_space(self) -> bool:
+    def bIsLogSpace(self) -> bool:
         """Check if parameter is in log10 space."""
         return 'dex' in self.units.lower()
+
+    def fsSharedTag(self) -> str:
+        """Return formatted shared-body annotation, or empty string."""
+        if self.bIsShared:
+            return f"  [shared: {', '.join(self.bodies)}]"
+        return ""
 
 
 @dataclass
@@ -70,15 +77,54 @@ class ObservableConfig:
     uncertainty_upper: Optional[float] = None
 
     @property
-    def is_asymmetric(self) -> bool:
+    def bIsAsymmetric(self) -> bool:
         """Check if observable has asymmetric uncertainties."""
-        return self.uncertainty_lower is not None and self.uncertainty_upper is not None
+        return (self.uncertainty_lower is not None
+                and self.uncertainty_upper is not None)
 
-    def get_uncertainty(self, computed: float) -> float:
+    def fdGetUncertainty(self, dComputed: float) -> float:
         """Get appropriate uncertainty based on computed value."""
-        if self.is_asymmetric:
-            return self.uncertainty_lower if computed < self.observed_value else self.uncertainty_upper
+        if self.bIsAsymmetric:
+            if dComputed < self.observed_value:
+                return self.uncertainty_lower
+            return self.uncertainty_upper
         return self.uncertainty
+
+
+def _flistParseParameters(listRaw: list) -> List[ParameterConfig]:
+    """Parse parameter entries from raw config dict."""
+    return [ParameterConfig(
+        name=p['name'],
+        bounds=tuple(p['bounds']),
+        units=p['units'],
+        description=p.get('description'),
+        prior=p.get('prior'),
+        bodies=p.get('bodies'),
+    ) for p in listRaw]
+
+
+def _flistParseOutputs(listRaw: list) -> List[OutputConfig]:
+    """Parse output entries from raw config dict."""
+    return [OutputConfig(
+        name=o['name'],
+        units=o['units'],
+        conversion_factor=o.get('conversion_factor', 1.0),
+        description=o.get('description'),
+    ) for o in listRaw]
+
+
+def _flistParseObservables(listRaw: list) -> List[ObservableConfig]:
+    """Parse observable entries from raw config dict."""
+    return [ObservableConfig(
+        name=obs['name'],
+        type=obs['type'],
+        observed_value=obs['observed_value'],
+        output=obs.get('output'),
+        expression=obs.get('expression'),
+        uncertainty=obs.get('uncertainty'),
+        uncertainty_lower=obs.get('uncertainty_lower'),
+        uncertainty_upper=obs.get('uncertainty_upper'),
+    ) for obs in listRaw]
 
 
 @dataclass
@@ -113,42 +159,16 @@ class MaxLEVConfig:
     @classmethod
     def _from_dict(cls, data: dict) -> 'MaxLEVConfig':
         """Parse configuration dictionary."""
-        parameters = [ParameterConfig(
-            name=p['name'],
-            bounds=tuple(p['bounds']),
-            units=p['units'],
-            description=p.get('description'),
-            prior=p.get('prior'),
-            bodies=p.get('bodies'),
-        ) for p in data.get('parameters', [])]
-
-        outputs = [OutputConfig(
-            name=o['name'],
-            units=o['units'],
-            conversion_factor=o.get('conversion_factor', 1.0),
-            description=o.get('description')
-        ) for o in data.get('outputs', [])]
-
-        observables = [ObservableConfig(
-            name=obs['name'],
-            type=obs['type'],
-            observed_value=obs['observed_value'],
-            output=obs.get('output'),
-            expression=obs.get('expression'),
-            uncertainty=obs.get('uncertainty'),
-            uncertainty_lower=obs.get('uncertainty_lower'),
-            uncertainty_upper=obs.get('uncertainty_upper')
-        ) for obs in data.get('observables', [])]
-
         return cls(
             name=data.get('name', 'maxlev_run'),
             vplanet=data.get('vplanet', {}),
-            parameters=parameters,
-            outputs=outputs,
-            observables=observables,
+            parameters=_flistParseParameters(data.get('parameters', [])),
+            outputs=_flistParseOutputs(data.get('outputs', [])),
+            observables=_flistParseObservables(data.get('observables', [])),
             likelihood=data.get('likelihood', {'type': 'gaussian'}),
-            optimizer=data.get('optimizer', {'algorithm': 'differential_evolution'}),
-            output_settings=data.get('output', {})
+            optimizer=data.get('optimizer',
+                               {'algorithm': 'differential_evolution'}),
+            output_settings=data.get('output', {}),
         )
 
     def validate(self) -> List[Tuple[str, int]]:
@@ -158,61 +178,140 @@ class MaxLEVConfig:
         Returns:
             List of (error_message, line_number) tuples. Empty if valid.
         """
-        errors = []
+        listErrors = []
+        listErrors.extend(self._flistValidateBasic())
+        listErrors.extend(self._flistValidateObservables())
+        listErrors.extend(self._flistValidateSharedParams())
+        listErrors.extend(self._flistValidateVplanet())
+        return listErrors
 
-        # Basic validation
+    def _flistValidateBasic(self) -> List[Tuple[str, int]]:
+        """Check that required sections are non-empty."""
+        listErrors = []
         if not self.parameters:
-            errors.append(("No parameters defined", 0))
+            listErrors.append(("No parameters defined", 0))
         if not self.outputs:
-            errors.append(("No outputs defined", 0))
+            listErrors.append(("No outputs defined", 0))
         if not self.observables:
-            errors.append(("No observables defined", 0))
+            listErrors.append(("No observables defined", 0))
+        return listErrors
 
-        # Validate observables reference valid outputs
-        output_names = {o.name for o in self.outputs}
+    def _flistValidateObservables(self) -> List[Tuple[str, int]]:
+        """Validate observable references and uncertainty specs."""
+        listErrors = []
+        setOutputNames = {o.name for o in self.outputs}
         for obs in self.observables:
-            if obs.type == 'direct' and obs.output not in output_names:
-                errors.append((f"Observable '{obs.name}' references unknown output '{obs.output}'", 0))
-            if obs.type not in ['direct', 'derived']:
-                errors.append((f"Observable '{obs.name}' has invalid type '{obs.type}'", 0))
+            listErrors.extend(
+                _flistValidateSingleObservable(obs, setOutputNames)
+            )
+        return listErrors
 
-            # Check uncertainty specification
-            if obs.uncertainty is None and not obs.is_asymmetric:
-                errors.append((f"Observable '{obs.name}' has no uncertainty specified", 0))
-
-        # Validate shared parameter format
+    def _flistValidateSharedParams(self) -> List[Tuple[str, int]]:
+        """Validate shared parameter format and detect conflicts."""
+        listErrors = []
         for param in self.parameters:
-            if param.bIsShared:
-                if '.' in param.name:
-                    errors.append((
-                        f"Shared parameter '{param.name}' must not use "
-                        f"'body.param' format (use just the option name)",
-                        0,
-                    ))
-                if len(param.bodies) < 2:
-                    errors.append((
-                        f"Shared parameter '{param.name}' needs at least "
-                        f"2 bodies (got {len(param.bodies)})",
-                        0,
-                    ))
+            if not param.bIsShared:
+                continue
+            listErrors.extend(_flistValidateSharedFormat(param))
+        listErrors.extend(
+            _flistValidateDuplicateBodies(self.parameters)
+        )
+        listErrors.extend(
+            _flistValidateSharedConflicts(self.parameters)
+        )
+        return listErrors
 
-        # Expand shared params into body.param entries for validation
+    def _flistValidateVplanet(self) -> List[Tuple[str, int]]:
+        """Run VPLanet-specific validation with expanded params."""
         listExpandedParams = []
         for param in self.parameters:
-            for sExpandedName in param.flistExpandedNames():
-                listExpandedParams.append({'name': sExpandedName})
-
-        # VPlanet validation
-        vplanet_exec = self.vplanet.get('executable', 'vplanet')
-        config_dict = {
+            for sName in param.flistExpandedNames():
+                listExpandedParams.append({'name': sName})
+        sExec = self.vplanet.get('executable', 'vplanet')
+        dictConfig = {
             'vplanet': self.vplanet,
             'parameters': listExpandedParams,
             'outputs': [{'name': o.name} for o in self.outputs],
-            'observables': [{'name': ob.name, 'type': ob.type, 'output': ob.output, 'expression': ob.expression}
-                          for ob in self.observables]
+            'observables': [
+                {'name': ob.name, 'type': ob.type,
+                 'output': ob.output, 'expression': ob.expression}
+                for ob in self.observables
+            ],
         }
+        return validation.validate_all(dictConfig, sExec)
 
-        vplanet_errors = validation.validate_all(config_dict, vplanet_exec)
-        errors.extend(vplanet_errors)
 
-        return errors
+def _flistValidateSingleObservable(obs, setOutputNames):
+    """Validate one observable's type, reference, and uncertainty."""
+    listErrors = []
+    if obs.type == 'direct' and obs.output not in setOutputNames:
+        listErrors.append((
+            f"Observable '{obs.name}' references unknown "
+            f"output '{obs.output}'", 0,
+        ))
+    if obs.type not in ['direct', 'derived']:
+        listErrors.append((
+            f"Observable '{obs.name}' has invalid "
+            f"type '{obs.type}'", 0,
+        ))
+    if obs.uncertainty is None and not obs.bIsAsymmetric:
+        listErrors.append((
+            f"Observable '{obs.name}' has no uncertainty specified", 0,
+        ))
+    return listErrors
+
+
+def _flistValidateSharedFormat(param):
+    """Validate a single shared parameter's name and body count."""
+    listErrors = []
+    if '.' in param.name:
+        listErrors.append((
+            f"Shared parameter '{param.name}' must not use "
+            f"'body.param' format (use just the option name)", 0,
+        ))
+    if len(param.bodies) < 2:
+        listErrors.append((
+            f"Shared parameter '{param.name}' needs at least "
+            f"2 bodies (got {len(param.bodies)})", 0,
+        ))
+    listDuplicates = _flistFindDuplicates(param.bodies)
+    if listDuplicates:
+        listErrors.append((
+            f"Shared parameter '{param.name}' has duplicate "
+            f"bodies: {', '.join(listDuplicates)}", 0,
+        ))
+    return listErrors
+
+
+def _flistFindDuplicates(listItems: list) -> List[str]:
+    """Return items that appear more than once in a list."""
+    setSeen = set()
+    listDuplicates = []
+    for sItem in listItems:
+        if sItem in setSeen and sItem not in listDuplicates:
+            listDuplicates.append(sItem)
+        setSeen.add(sItem)
+    return listDuplicates
+
+
+def _flistValidateDuplicateBodies(listParameters):
+    """Check for duplicate body names within each shared parameter."""
+    # Already handled per-parameter in _flistValidateSharedFormat
+    return []
+
+
+def _flistValidateSharedConflicts(listParameters):
+    """Detect conflicts between shared and non-shared params."""
+    listErrors = []
+    dictExpandedToParam = {}
+    for param in listParameters:
+        for sName in param.flistExpandedNames():
+            if sName in dictExpandedToParam:
+                sOther = dictExpandedToParam[sName]
+                listErrors.append((
+                    f"Parameter conflict: '{param.name}' and "
+                    f"'{sOther}' both target '{sName}'", 0,
+                ))
+            else:
+                dictExpandedToParam[sName] = param.name
+    return listErrors

@@ -269,6 +269,111 @@ typically converges in a few hundred function evaluations, taking a few minutes.
 The complete configuration file is at
 ``examples/NelderMead/nelderMead.json``.
 
+POISE Calibration (Shared Parameters)
+--------------------------------------
+
+The POISE calibration example demonstrates how to use **shared parameters** to
+optimize a single set of surface properties across multiple VPLanet bodies. The
+POISE module (Planetary Orbit-Influenced Surface Evolution) simulates
+latitude-dependent climate, and this example calibrates 6 surface parameters by
+fitting global-mean temperature to observations at 6 different obliquities.
+
+The Problem
+^^^^^^^^^^^
+
+Earth's global-mean temperature varies with obliquity. By simulating the same
+planet at 6 obliquities (0, 15, 23.44, 45, 60, 85 degrees), we can constrain
+surface albedo and heat transport parameters. The VPLanet system contains 1 star
+and 6 identical planet files that differ only in their obliquity setting.
+
+All 6 surface parameters must have the **same value** in every planet file. Without
+shared parameters this would require 36 free dimensions (6 params x 6 bodies);
+with shared parameters MaxLEV treats them as 6 free dimensions.
+
+Parameters
+^^^^^^^^^^
+
+The example varies 6 shared parameters:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Description
+     - Bounds
+   * - ``dIceAlbedo``
+     - Ice albedo
+     - 0.4 - 0.8
+   * - ``dAlbedoLand``
+     - Land albedo
+     - 0.2 - 0.6
+   * - ``dAlbedoWater``
+     - Water albedo
+     - 0.1 - 0.5
+   * - ``dDiffusion``
+     - Heat diffusion coefficient
+     - 0.4 - 0.8
+   * - ``dHeatCapLand``
+     - Heat capacity of land (J/m2/K)
+     - 1e7 - 9e7
+   * - ``dHeatCapWater``
+     - Heat capacity of water (J/m2/K)
+     - 1e8 - 9e8
+
+Each parameter uses the ``bodies`` key to declare sharing:
+
+.. code-block:: json
+
+    {
+        "name": "dIceAlbedo",
+        "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
+        "bounds": [0.4, 0.8],
+        "units": "dimensionless",
+        "description": "Ice albedo"
+    }
+
+Observables
+^^^^^^^^^^^
+
+The model is constrained by 6 global-mean temperature observations, one per
+obliquity:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Obliquity
+     - Observed TGlobal
+     - Uncertainty
+   * - 0 deg
+     - 27 C
+     - 1 C
+   * - 15 deg
+     - 22 C
+     - 1 C
+   * - 23.44 deg
+     - 14 C
+     - 1 C
+   * - 45 deg
+     - 5 C
+     - 1 C
+   * - 60 deg
+     - -5 C
+     - 1 C
+   * - 85 deg
+     - -15 C
+     - 1 C
+
+Running the Example
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    cd examples/POISECalibration
+    maxlev config.json
+
+The complete configuration file is at
+``examples/POISECalibration/config.json``.
+
 Generated Files
 ---------------
 

@@ -6,7 +6,7 @@ import subprocess
 import numpy as np
 import vplanet_inference as vpi
 from typing import Optional
-from .units import build_inparams_dict, build_outparams_dict
+from .units import fdictBuildInparams, fdictBuildOutparams
 
 
 class AllSimulationsFailedError(RuntimeError):
@@ -55,47 +55,43 @@ class MaxLEVModel:
         self.likelihood = likelihood_model
         self.observable_computer = observable_computer
         self.priorCollection = prior_collection
-        self.failure_penalty = config.likelihood.get('failure_penalty', 1e10)
+        self.dFailurePenalty = config.likelihood.get('failure_penalty', 1e10)
         self.iTimeout = config.vplanet.get('timeout', 120)
+        self._fnInitVplanetModel(config)
+        self._fnInitExpansionAndBounds(config)
 
-        # Build input/output parameter dictionaries
-        inparams = build_inparams_dict(config.parameters)
-        outparams = build_outparams_dict(config.outputs)
-
-        # Initialize VplanetModel
+    def _fnInitVplanetModel(self, config) -> None:
+        """Build VplanetModel with input/output parameter dicts."""
+        dictInparams = fdictBuildInparams(config.parameters)
+        dictOutparams = fdictBuildOutparams(config.outputs)
         self.vpm = vpi.VplanetModel(
-            inparams,
+            dictInparams,
             inpath=config.vplanet.get('inpath', '.'),
-            outparams=outparams,
+            outparams=dictOutparams,
             executable=config.vplanet.get('executable', 'vplanet'),
             vplfile=config.vplanet.get('vplfile', 'vpl.in'),
             verbose=config.vplanet.get('verbose', False),
         )
 
-        # Store bounds as numpy array (free-parameter space)
+    def _fnInitExpansionAndBounds(self, config) -> None:
+        """Set up bounds, names, expansion map, and conversion factors."""
         self.bounds = np.array([p.bounds for p in config.parameters])
-        self.param_names = [p.name for p in config.parameters]
-
-        # Build expansion map for shared parameters
+        self.listParamNames = [p.name for p in config.parameters]
         self.iaExpansionMap = _fiaBuildExpansionMap(config.parameters)
-
-        # Store conversion factors (sorted alphabetically to match output order)
-        sorted_outputs = sorted(config.outputs, key=lambda x: x.name)
+        listSortedOutputs = sorted(config.outputs, key=lambda x: x.name)
         self.daConversionFactors = np.array(
-            [o.conversion_factor for o in sorted_outputs]
+            [o.conversion_factor for o in listSortedOutputs]
         )
-
-        # Failure tracking
         self.iSimulationCount = 0
         self.iSimulationFailureCount = 0
         self.iFailureCheckWindow = config.likelihood.get(
             'failure_check_window', 10
         )
 
-    def check_bounds(self, theta: np.ndarray) -> bool:
+    def fbCheckBounds(self, daTheta: np.ndarray) -> bool:
         """Check if parameters are within bounds."""
-        for i, val in enumerate(theta):
-            if not (self.bounds[i, 0] <= val <= self.bounds[i, 1]):
+        for i, dValue in enumerate(daTheta):
+            if not (self.bounds[i, 0] <= dValue <= self.bounds[i, 1]):
                 return False
         return True
 
@@ -118,70 +114,78 @@ class MaxLEVModel:
             proc.wait()
             raise RuntimeError("VPlanet simulation timed out")
 
-    def run_simulation(self, theta: np.ndarray) -> Optional[np.ndarray]:
-        """
-        Run VPlanet simulation and apply unit conversion factors.
-
-        Args:
-            theta: Parameter values array
-
-        Returns:
-            Output array (alphabetically sorted!) or None if failed
-        """
-        daExpandedTheta = self._fdaExpandTheta(theta)
+    def _fdaSuppressedRunModel(self, daTheta: np.ndarray):
+        """Run vpm.run_model with suppressed stderr and timeout."""
         fnOriginalCall = subprocess.call
         subprocess.call = self._fiTimedSubprocessCall
         iOldStderrFd = os.dup(2)
         iDevNullFd = os.open(os.devnull, os.O_WRONLY)
         os.dup2(iDevNullFd, 2)
         try:
-            outputs = self.vpm.run_model(daExpandedTheta, remove=True)
-            outputs *= self.daConversionFactors
-            return outputs
-        except Exception:
-            return None
+            return self.vpm.run_model(daTheta, remove=True)
         finally:
             os.dup2(iOldStderrFd, 2)
             os.close(iOldStderrFd)
             os.close(iDevNullFd)
             subprocess.call = fnOriginalCall
 
-    def neg_log_likelihood(self, theta: np.ndarray) -> float:
+    def fdaRunSimulation(self, daTheta: np.ndarray) -> Optional[np.ndarray]:
+        """
+        Run VPlanet simulation and apply unit conversion factors.
+
+        Args:
+            daTheta: Parameter values array
+
+        Returns:
+            Output array (alphabetically sorted!) or None if failed
+        """
+        daExpandedTheta = self._fdaExpandTheta(daTheta)
+        try:
+            daOutputs = self._fdaSuppressedRunModel(daExpandedTheta)
+            daOutputs *= self.daConversionFactors
+            return daOutputs
+        except Exception:
+            return None
+
+    def fdNegLogLikelihood(self, daTheta: np.ndarray) -> float:
         """
         Objective function for optimization.
 
         Returns negative log-likelihood for minimization.
-        Returns failure_penalty for invalid runs.
+        Returns dFailurePenalty for invalid runs.
         """
-        if not self.check_bounds(theta):
-            return self.failure_penalty
+        if not self.fbCheckBounds(daTheta):
+            return self.dFailurePenalty
 
-        outputs = self.run_simulation(theta)
-        if outputs is None:
+        daOutputs = self.fdaRunSimulation(daTheta)
+        if not self._fbIsValidOutput(daOutputs):
             self._fnRecordSimulationFailure()
-            return self.failure_penalty
-
-        if not np.all(np.isfinite(outputs)):
-            self._fnRecordSimulationFailure()
-            return self.failure_penalty
+            return self.dFailurePenalty
 
         self.iSimulationCount += 1
+        return self._fdComputeLikelihood(daOutputs)
 
+    def _fbIsValidOutput(self, daOutputs) -> bool:
+        """Check that simulation output is usable."""
+        if daOutputs is None:
+            return False
+        return np.all(np.isfinite(daOutputs))
+
+    def _fdComputeLikelihood(self, daOutputs: np.ndarray) -> float:
+        """Compute neg-log-likelihood from valid outputs."""
         try:
-            computed = self.observable_computer.compute(outputs)
-            neg_log_like = self.likelihood.compute(
-                computed, self.config.observables
+            dictComputed = self.observable_computer.compute(daOutputs)
+            return self.likelihood.compute(
+                dictComputed, self.config.observables
             )
-            return neg_log_like
-
         except Exception:
-            return self.failure_penalty
+            return self.dFailurePenalty
 
     def fdNegLogPosterior(self, daTheta: np.ndarray) -> float:
         """Objective for MAP: negative log-posterior = -ln(L) - ln(prior)."""
-        dNegLogLike = self.neg_log_likelihood(daTheta)
-        if dNegLogLike >= self.failure_penalty:
-            return self.failure_penalty
+        dNegLogLike = self.fdNegLogLikelihood(daTheta)
+        if dNegLogLike >= self.dFailurePenalty:
+            return self.dFailurePenalty
         if self.priorCollection is None:
             return dNegLogLike
         return dNegLogLike + self.priorCollection.fdNegLogPrior(daTheta)

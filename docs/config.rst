@@ -74,6 +74,71 @@ The ``parameters`` section defines which VPLanet input parameters to optimize:
     Parameter names are validated against VPLanet's ``-h`` output. Invalid
     parameter names will cause an error before optimization begins.
 
+Shared Parameters
+^^^^^^^^^^^^^^^^^
+
+When multiple VPLanet body files share the same parameter value (e.g., six
+planets with identical surface albedo), use the ``bodies`` list to declare a
+shared parameter:
+
+.. code-block:: json
+
+    {
+        "parameters": [
+            {
+                "name": "dIceAlbedo",
+                "bodies": ["planet1", "planet2", "planet3"],
+                "bounds": [0.4, 0.8],
+                "units": "dimensionless",
+                "description": "Ice albedo (shared across all planets)"
+            }
+        ]
+    }
+
+- ``name``: The VPLanet option name **without** a body prefix
+- ``bodies``: List of body file names that receive this parameter value
+
+The optimizer treats each shared parameter as a single free dimension. Internally
+MaxLEV expands the parameter to every listed body when calling
+``vplanet_inference``, ensuring that all bodies receive the same optimized value.
+
+Rules:
+
+- A shared parameter must list at least 2 bodies.
+- The ``name`` must not use ``body.param`` format (no dots).
+- Body names must not be duplicated within a single parameter.
+- A shared parameter must not conflict with a non-shared parameter that targets
+  the same ``body.param`` combination.
+
+Priors
+^^^^^^
+
+Each parameter can optionally specify a prior distribution used for Maximum A
+Posteriori (MAP) estimation:
+
+.. code-block:: json
+
+    {
+        "name": "star.dMass",
+        "bounds": [0.5, 1.5],
+        "units": "Msun",
+        "prior": {
+            "type": "gaussian",
+            "mean": 1.0,
+            "std": 0.1
+        }
+    }
+
+Supported prior types:
+
+- ``uniform`` (default): Flat prior within bounds. Equivalent to no prior.
+- ``gaussian``: Normal distribution with ``mean`` and ``std``.
+- ``asymmetric_gaussian``: Asymmetric normal with ``mean``, ``std_upper``, and
+  ``std_lower``.
+
+When any parameter has a non-uniform prior, MaxLEV automatically optimizes the
+posterior (MAP) instead of the likelihood (MLE).
+
 Outputs
 -------
 
@@ -191,6 +256,10 @@ The ``likelihood`` section configures the likelihood function:
 
 - ``type``: Likelihood type (currently only ``gaussian`` is supported)
 - ``failure_penalty``: Value returned for failed simulations (default: ``1e10``)
+- ``failure_check_window``: Number of consecutive failures that triggers an early
+  abort (default: ``10``). If all simulations within the window fail, MaxLEV
+  raises ``AllSimulationsFailedError`` to avoid wasting time on a misconfigured
+  problem.
 
 The Gaussian likelihood assumes independent observables:
 

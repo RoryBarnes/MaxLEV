@@ -14,10 +14,35 @@ from maxlev.output import (
     fnGenerateMaxLEVInputFiles,
     _flistUpdateInputFile,
     _fsUpdateLine,
-    save_results,
-    plot_evolution,
+    _fsFormatValue,
+    fnSaveResults,
+    fnPlotEvolution,
 )
 from maxlev.config import ParameterConfig, OutputConfig, ObservableConfig
+
+
+class TestFormatValue:
+    """Tests for _fsFormatValue helper."""
+
+    def test_large_value_scientific_notation(self):
+        """Test that large values use scientific notation."""
+        result = _fsFormatValue(1e25)
+        assert 'e' in result.lower()
+
+    def test_small_value_scientific_notation(self):
+        """Test that small values use scientific notation."""
+        result = _fsFormatValue(1e-5)
+        assert 'e' in result.lower()
+
+    def test_normal_value_decimal(self):
+        """Test that normal values use decimal notation."""
+        result = _fsFormatValue(3.5)
+        assert result == '3.5'
+
+    def test_zero_value(self):
+        """Test that zero is formatted as '0'."""
+        result = _fsFormatValue(0.0)
+        assert result == '0'
 
 
 class TestUpdateLine:
@@ -140,8 +165,8 @@ class TestGenerateMaxLEVInputFiles:
             config = MagicMock()
             config.vplanet = {'inpath': tmpdir}
             config.parameters = [
-                MagicMock(bIsShared=False, file_name='earth', param_name='dTMan'),
-                MagicMock(bIsShared=False, file_name='earth', param_name='dTCMB'),
+                MagicMock(bIsShared=False, sFileName='earth', sParamName='dTMan'),
+                MagicMock(bIsShared=False, sFileName='earth', sParamName='dTCMB'),
             ]
 
             best_params = np.array([3000.0, 4500.0])
@@ -167,8 +192,8 @@ class TestGenerateMaxLEVInputFiles:
             config = MagicMock()
             config.vplanet = {'inpath': tmpdir}
             config.parameters = [
-                MagicMock(bIsShared=False, file_name='star', param_name='dLuminosity'),
-                MagicMock(bIsShared=False, file_name='planet', param_name='dMass'),
+                MagicMock(bIsShared=False, sFileName='star', sParamName='dLuminosity'),
+                MagicMock(bIsShared=False, sFileName='planet', sParamName='dMass'),
             ]
 
             best_params = np.array([0.9, 1.5])
@@ -184,7 +209,7 @@ class TestGenerateMaxLEVInputFiles:
             config = MagicMock()
             config.vplanet = {'inpath': tmpdir}
             config.parameters = [
-                MagicMock(bIsShared=False, file_name='nonexistent', param_name='dParam'),
+                MagicMock(bIsShared=False, sFileName='nonexistent', sParamName='dParam'),
             ]
 
             best_params = np.array([100.0])
@@ -195,13 +220,18 @@ class TestGenerateMaxLEVInputFiles:
 
 class MockParam:
     """Mock parameter for testing."""
-    def __init__(self, name, bounds, file_name=None, param_name=None):
+    def __init__(self, name, bounds, sFileName=None, sParamName=None):
         self.name = name
         self.bounds = bounds
-        self.file_name = file_name or name.split('.')[0]
-        self.param_name = param_name or (name.split('.')[1] if '.' in name else name)
+        self.sFileName = sFileName or name.split('.')[0]
+        self.sParamName = sParamName or (name.split('.')[1] if '.' in name else name)
         self.bIsShared = False
         self.bodies = None
+
+    def fsSharedTag(self):
+        if self.bIsShared:
+            return f"  [shared: {', '.join(self.bodies)}]"
+        return ""
 
 
 class MockObservable:
@@ -211,12 +241,12 @@ class MockObservable:
         self.observed_value = observed_value
         self._uncertainty = uncertainty
 
-    def get_uncertainty(self, computed):
+    def fdGetUncertainty(self, dComputed):
         return self._uncertainty
 
 
 class TestSaveResults:
-    """Tests for save_results function."""
+    """Tests for fnSaveResults function."""
 
     def test_saves_results_file(self):
         """Test that results are saved to file."""
@@ -236,7 +266,7 @@ class TestSaveResults:
             config.vplanet = {'inpath': tmpdir}
 
             model = MagicMock()
-            model.run_simulation.return_value = np.array([52.0])
+            model.fdaRunSimulation.return_value = np.array([52.0])
             model.observable_computer.compute.return_value = {'Obs1': 52.0}
 
             output_settings = {'results_file': str(results_file)}
@@ -244,7 +274,7 @@ class TestSaveResults:
             best_params = np.array([150.0])
             best_value = 0.4
 
-            save_results(best_params, best_value, config, model, output_settings)
+            fnSaveResults(best_params, best_value, config, model, output_settings)
 
             assert results_file.exists()
             content = results_file.read_text()
@@ -253,7 +283,7 @@ class TestSaveResults:
             assert '1.500000e+02' in content or '150' in content
 
     def test_handles_simulation_failure_gracefully(self):
-        """Test that save_results handles simulation failures."""
+        """Test that fnSaveResults handles simulation failures."""
         with tempfile.TemporaryDirectory() as tmpdir:
             results_file = Path(tmpdir) / "results.txt"
 
@@ -266,22 +296,47 @@ class TestSaveResults:
             config.vplanet = {'inpath': tmpdir}
 
             model = MagicMock()
-            model.run_simulation.side_effect = Exception("Simulation failed")
+            model.fdaRunSimulation.side_effect = Exception("Simulation failed")
 
             output_settings = {'results_file': str(results_file)}
 
             best_params = np.array([100.0])
             best_value = 1e10
 
-            save_results(best_params, best_value, config, model, output_settings)
+            fnSaveResults(best_params, best_value, config, model, output_settings)
 
             assert results_file.exists()
             content = results_file.read_text()
             assert 'Could not compute' in content or 'Maximum Likelihood' in content
 
+    def test_saves_shared_tag_in_results(self):
+        """Test that shared param tags appear in the results file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            results_file = Path(tmpdir) / "results.txt"
+
+            param = MockParam(name='dIceAlbedo', bounds=(0.4, 0.8))
+            param.bIsShared = True
+            param.bodies = ['planet1', 'planet2']
+
+            config = MagicMock()
+            config.name = "SharedTest"
+            config.parameters = [param]
+            config.observables = []
+            config.vplanet = {'inpath': tmpdir}
+
+            model = MagicMock()
+            model.fdaRunSimulation.return_value = None
+
+            output_settings = {'results_file': str(results_file)}
+
+            fnSaveResults(np.array([0.6]), 1.0, config, model, output_settings)
+
+            content = results_file.read_text()
+            assert '[shared: planet1, planet2]' in content
+
 
 class TestPlotEvolution:
-    """Tests for plot_evolution function."""
+    """Tests for fnPlotEvolution function."""
 
     def test_skips_when_disabled(self):
         """Test that plotting is skipped when disabled."""
@@ -289,9 +344,9 @@ class TestPlotEvolution:
         config = MagicMock()
         model = MagicMock()
 
-        plot_evolution(np.array([1.0]), config, model, output_settings)
+        fnPlotEvolution(np.array([1.0]), config, model, output_settings)
 
-        model.run_simulation.assert_not_called()
+        model.fdaRunSimulation.assert_not_called()
 
     def test_warns_when_no_stop_time(self):
         """Test warning when stop time parameter not found."""
@@ -309,7 +364,7 @@ class TestPlotEvolution:
         model = MagicMock()
 
         with patch('builtins.print') as mock_print:
-            plot_evolution(np.array([1.0]), config, model, output_settings)
+            fnPlotEvolution(np.array([1.0]), config, model, output_settings)
             calls = [str(c) for c in mock_print.call_args_list]
             assert any('stop time' in str(c).lower() for c in calls)
 
@@ -338,7 +393,7 @@ class TestPlotEvolution:
             ]
 
             model = MagicMock()
-            model.run_simulation.return_value = np.array([45.0])
+            model.fdaRunSimulation.return_value = np.array([45.0])
             model.observable_computer.compute.return_value = {'HeatFlow': 45.0}
 
             with patch('matplotlib.pyplot.savefig'):
@@ -347,7 +402,7 @@ class TestPlotEvolution:
                     mock_ax = MagicMock()
                     mock_subplots.return_value = (mock_fig, mock_ax)
 
-                    plot_evolution(np.array([4.5]), config, model, output_settings)
+                    fnPlotEvolution(np.array([4.5]), config, model, output_settings)
 
                     mock_ax.set_xscale.assert_not_called()
 
@@ -376,7 +431,7 @@ class TestPlotEvolution:
             ]
 
             model = MagicMock()
-            model.run_simulation.return_value = np.array([45.0])
+            model.fdaRunSimulation.return_value = np.array([45.0])
             model.observable_computer.compute.return_value = {'HeatFlow': 45.0}
 
             with patch('matplotlib.pyplot.subplots') as mock_subplots:
@@ -384,7 +439,7 @@ class TestPlotEvolution:
                 mock_ax = MagicMock()
                 mock_subplots.return_value = (mock_fig, mock_ax)
 
-                plot_evolution(np.array([4.5]), config, model, output_settings)
+                fnPlotEvolution(np.array([4.5]), config, model, output_settings)
 
                 mock_ax.set_xscale.assert_called_with('log')
                 mock_ax.set_yscale.assert_called_with('log')
@@ -415,14 +470,14 @@ class TestPlotEvolution:
             ]
 
             model = MagicMock()
-            model.run_simulation.return_value = None  # Simulation fails
+            model.fdaRunSimulation.return_value = None  # Simulation fails
 
             with patch('matplotlib.pyplot.subplots') as mock_subplots:
                 mock_fig = MagicMock()
                 mock_ax = MagicMock()
                 mock_subplots.return_value = (mock_fig, mock_ax)
 
-                plot_evolution(np.array([4.5]), config, model, output_settings)
+                fnPlotEvolution(np.array([4.5]), config, model, output_settings)
 
                 mock_fig.savefig.assert_called_once()
 
@@ -451,7 +506,7 @@ class TestPlotEvolution:
             ]
 
             model = MagicMock()
-            model.run_simulation.return_value = np.array([45.0])
+            model.fdaRunSimulation.return_value = np.array([45.0])
             model.observable_computer.compute.side_effect = Exception("Compute error")
 
             with patch('matplotlib.pyplot.subplots') as mock_subplots:
@@ -459,7 +514,7 @@ class TestPlotEvolution:
                 mock_ax = MagicMock()
                 mock_subplots.return_value = (mock_fig, mock_ax)
 
-                plot_evolution(np.array([4.5]), config, model, output_settings)
+                fnPlotEvolution(np.array([4.5]), config, model, output_settings)
 
                 mock_fig.savefig.assert_called_once()
 
@@ -480,8 +535,8 @@ class TestSharedParameterOutput:
                 MagicMock(
                     bIsShared=True,
                     bodies=['planet1', 'planet2', 'planet3'],
-                    param_name='dIceAlbedo',
-                    file_name='planet1',
+                    sParamName='dIceAlbedo',
+                    sFileName='planet1',
                 ),
             ]
 
@@ -508,14 +563,14 @@ class TestSharedParameterOutput:
                 MagicMock(
                     bIsShared=True,
                     bodies=['planet1', 'planet2'],
-                    param_name='dIceAlbedo',
-                    file_name='planet1',
+                    sParamName='dIceAlbedo',
+                    sFileName='planet1',
                 ),
                 MagicMock(
                     bIsShared=False,
                     bodies=None,
-                    param_name='dMass',
-                    file_name='star',
+                    sParamName='dMass',
+                    sFileName='star',
                 ),
             ]
 
@@ -526,6 +581,63 @@ class TestSharedParameterOutput:
             assert (Path(tmpdir) / "planet1_maxlev.in").exists()
             assert (Path(tmpdir) / "planet2_maxlev.in").exists()
             assert (Path(tmpdir) / "star_maxlev.in").exists()
+
+    def test_shared_and_nonshared_same_body(self):
+        """Test shared+non-shared params writing to the same body file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "planet1.in").write_text(
+                "dIceAlbedo 0.5\ndObliquity 23.44\n"
+            )
+            (Path(tmpdir) / "planet2.in").write_text(
+                "dIceAlbedo 0.5\n"
+            )
+
+            config = MagicMock()
+            config.vplanet = {'inpath': tmpdir}
+            config.parameters = [
+                MagicMock(
+                    bIsShared=True,
+                    bodies=['planet1', 'planet2'],
+                    sParamName='dIceAlbedo',
+                    sFileName='planet1',
+                ),
+                MagicMock(
+                    bIsShared=False,
+                    bodies=None,
+                    sParamName='dObliquity',
+                    sFileName='planet1',
+                ),
+            ]
+
+            best_params = np.array([0.65, 30.0])
+            result = fnGenerateMaxLEVInputFiles(best_params, config)
+
+            sContent = (Path(tmpdir) / "planet1_maxlev.in").read_text()
+            assert '0.65' in sContent
+            assert '30' in sContent
+            assert (Path(tmpdir) / "planet2_maxlev.in").exists()
+
+    def test_shared_with_missing_body_file(self):
+        """Test shared param when one body file is missing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "planet1.in").write_text("dIceAlbedo 0.5\n")
+
+            config = MagicMock()
+            config.vplanet = {'inpath': tmpdir}
+            config.parameters = [
+                MagicMock(
+                    bIsShared=True,
+                    bodies=['planet1', 'planet2'],
+                    sParamName='dIceAlbedo',
+                    sFileName='planet1',
+                ),
+            ]
+
+            best_params = np.array([0.65])
+            result = fnGenerateMaxLEVInputFiles(best_params, config)
+
+            assert len(result) == 1
+            assert (Path(tmpdir) / "planet1_maxlev.in").exists()
 
     def test_flistFileNamesForParameter_shared(self):
         """Test helper returns all bodies for shared param."""
@@ -544,7 +656,7 @@ class TestSharedParameterOutput:
 
         param = MagicMock()
         param.bIsShared = False
-        param.file_name = 'earth'
+        param.sFileName = 'earth'
 
         result = _flistFileNamesForParameter(param)
         assert result == ['earth']

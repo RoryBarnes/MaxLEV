@@ -12,42 +12,42 @@
             "name": "dIceAlbedo",
             "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
             "bounds": [0.4, 0.8],
-            "units": "",
+            "units": "dimensionless",
             "description": "Ice albedo"
         },
         {
             "name": "dAlbedoLand",
             "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
             "bounds": [0.2, 0.6],
-            "units": "",
+            "units": "dimensionless",
             "description": "Land albedo"
         },
         {
             "name": "dAlbedoWater",
             "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
             "bounds": [0.1, 0.5],
-            "units": "",
+            "units": "dimensionless",
             "description": "Water albedo"
         },
         {
             "name": "dDiffusion",
             "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
             "bounds": [0.4, 0.8],
-            "units": "",
+            "units": "dimensionless",
             "description": "Heat diffusion coefficient"
         },
         {
             "name": "dHeatCapLand",
             "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
             "bounds": [1e7, 9e7],
-            "units": "",
+            "units": "dimensionless",
             "description": "Heat capacity of land [J/(m^2 K)]"
         },
         {
             "name": "dHeatCapWater",
             "bodies": ["planet1", "planet2", "planet3", "planet4", "planet5", "planet6"],
             "bounds": [1e8, 9e8],
-            "units": "",
+            "units": "dimensionless",
             "description": "Heat capacity of water [J/(m^2 K)]"
         }
     ],

@@ -42,7 +42,7 @@ class GaussianLikelihood(LikelihoodModel):
         for obs in observables:
             computed = computed_values[obs.name]
             observed = obs.observed_value
-            sigma = obs.get_uncertainty(computed)
+            sigma = obs.fdGetUncertainty(computed)
 
             chi2 += ((computed - observed) / sigma) ** 2
 
@@ -83,7 +83,7 @@ class AsymmetricGaussianLikelihood(LikelihoodModel):
         for obs in observables:
             computed = computed_values[obs.name]
             observed = obs.observed_value
-            sigma = obs.get_uncertainty(computed)
+            sigma = obs.fdGetUncertainty(computed)
 
             chi2 += ((computed - observed) / sigma) ** 2
 
@@ -108,7 +108,7 @@ def create_likelihood(config: dict, observables: list) -> LikelihoodModel:
     return_negative = config.get('return_negative', True)
 
     # Auto-detect if any observables have asymmetric uncertainties
-    has_asymmetric = any(obs.is_asymmetric for obs in observables)
+    has_asymmetric = any(obs.bIsAsymmetric for obs in observables)
 
     if has_asymmetric:
         return AsymmetricGaussianLikelihood(return_negative=return_negative)

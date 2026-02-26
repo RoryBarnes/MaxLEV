@@ -7,136 +7,146 @@ import astropy.units as u
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from maxlev.units import parse_unit_string, build_inparams_dict, build_outparams_dict
+from maxlev.units import fParseUnitString, fdictBuildInparams, fdictBuildOutparams
 from maxlev.config import ParameterConfig, OutputConfig
 
 
 class TestParseUnitString:
-    """Tests for parse_unit_string function."""
+    """Tests for fParseUnitString function."""
 
     def test_parse_msun(self):
         """Test parsing solar mass unit."""
-        result = parse_unit_string('Msun')
+        result = fParseUnitString('Msun')
         assert result == u.Msun
 
     def test_parse_msun_lowercase(self):
         """Test parsing solar mass unit (lowercase)."""
-        result = parse_unit_string('msun')
+        result = fParseUnitString('msun')
         assert result == u.Msun
 
     def test_parse_lsun(self):
         """Test parsing solar luminosity unit."""
-        result = parse_unit_string('Lsun')
+        result = fParseUnitString('Lsun')
         assert result == u.Lsun
 
     def test_parse_rsun(self):
         """Test parsing solar radius unit."""
-        result = parse_unit_string('Rsun')
+        result = fParseUnitString('Rsun')
         assert result == u.Rsun
 
     def test_parse_gyr(self):
         """Test parsing gigayear unit."""
-        result = parse_unit_string('Gyr')
+        result = fParseUnitString('Gyr')
         assert result == u.Gyr
 
     def test_parse_myr(self):
         """Test parsing megayear unit."""
-        result = parse_unit_string('Myr')
+        result = fParseUnitString('Myr')
         assert result == u.Myr
 
     def test_parse_yr(self):
         """Test parsing year unit."""
-        result = parse_unit_string('yr')
+        result = fParseUnitString('yr')
         assert result == u.yr
 
     def test_parse_day(self):
         """Test parsing day unit."""
-        result = parse_unit_string('day')
+        result = fParseUnitString('day')
         assert result == u.day
 
     def test_parse_d_as_day(self):
         """Test parsing 'd' as day unit."""
-        result = parse_unit_string('d')
+        result = fParseUnitString('d')
         assert result == u.day
 
     def test_parse_s(self):
         """Test parsing second unit."""
-        result = parse_unit_string('s')
+        result = fParseUnitString('s')
         assert result == u.s
 
     def test_parse_kg(self):
         """Test parsing kilogram unit."""
-        result = parse_unit_string('kg')
+        result = fParseUnitString('kg')
         assert result == u.kg
 
     def test_parse_m(self):
         """Test parsing meter unit."""
-        result = parse_unit_string('m')
+        result = fParseUnitString('m')
         assert result == u.m
 
     def test_parse_au(self):
         """Test parsing AU unit."""
-        result = parse_unit_string('au')
+        result = fParseUnitString('au')
         assert result == u.au
 
     def test_parse_rearth(self):
         """Test parsing Earth radius unit."""
-        result = parse_unit_string('Rearth')
+        result = fParseUnitString('Rearth')
         assert result == u.Rearth
 
     def test_parse_mearth(self):
         """Test parsing Earth mass unit."""
-        result = parse_unit_string('Mearth')
+        result = fParseUnitString('Mearth')
         assert result == u.Mearth
 
     def test_parse_dimensionless(self):
         """Test parsing dimensionless unit."""
-        result = parse_unit_string('dimensionless')
+        result = fParseUnitString('dimensionless')
         assert result == u.dimensionless_unscaled
 
     def test_parse_dex_dimensionless(self):
         """Test parsing dex(dimensionless) unit."""
-        result = parse_unit_string('dex(dimensionless)')
+        result = fParseUnitString('dex(dimensionless)')
         assert result == u.dex(u.dimensionless_unscaled)
 
     def test_parse_dex_s(self):
         """Test parsing dex(s) unit."""
-        result = parse_unit_string('dex(s)')
+        result = fParseUnitString('dex(s)')
         assert result == u.dex(u.s)
 
     def test_parse_dex_yr(self):
         """Test parsing dex(yr) unit."""
-        result = parse_unit_string('dex(yr)')
+        result = fParseUnitString('dex(yr)')
         assert result == u.dex(u.yr)
 
     def test_parse_with_whitespace(self):
         """Test parsing unit string with leading/trailing whitespace."""
-        result = parse_unit_string('  Msun  ')
+        result = fParseUnitString('  Msun  ')
         assert result == u.Msun
 
     def test_parse_invalid_dex_format(self):
         """Test that invalid dex format raises ValueError."""
         with pytest.raises(ValueError, match="Invalid dex unit format"):
-            parse_unit_string('dex(Msun')
+            fParseUnitString('dex(Msun')
 
     def test_parse_unknown_unit(self):
         """Test that unknown units raise ValueError."""
         with pytest.raises(ValueError, match="Unknown unit"):
-            parse_unit_string('unknown_unit_xyz')
+            fParseUnitString('unknown_unit_xyz')
 
     def test_parse_astropy_unit_directly(self):
         """Test parsing units that astropy can handle directly."""
-        result = parse_unit_string('km')
+        result = fParseUnitString('km')
         assert result == u.km
 
     def test_parse_compound_unit(self):
         """Test parsing compound astropy units."""
-        result = parse_unit_string('km/s')
+        result = fParseUnitString('km/s')
         assert result == u.km / u.s
+
+    def test_parse_empty_string(self):
+        """Test that empty string returns dimensionless."""
+        result = fParseUnitString('')
+        assert result == u.dimensionless_unscaled
+
+    def test_parse_whitespace_only(self):
+        """Test that whitespace-only string returns dimensionless."""
+        result = fParseUnitString('   ')
+        assert result == u.dimensionless_unscaled
 
 
 class TestBuildInparamsDict:
-    """Tests for build_inparams_dict function."""
+    """Tests for fdictBuildInparams function."""
 
     def test_builds_dict_from_parameters(self):
         """Test building inparams dictionary."""
@@ -145,7 +155,7 @@ class TestBuildInparamsDict:
             ParameterConfig(name='star.dAge', bounds=(1.0, 10.0), units='Gyr'),
         ]
 
-        result = build_inparams_dict(parameters)
+        result = fdictBuildInparams(parameters)
 
         assert 'star.dMass' in result
         assert 'star.dAge' in result
@@ -154,7 +164,7 @@ class TestBuildInparamsDict:
 
     def test_empty_parameters(self):
         """Test building dict from empty parameter list."""
-        result = build_inparams_dict([])
+        result = fdictBuildInparams([])
         assert result == {}
 
     def test_handles_dex_units(self):
@@ -167,13 +177,13 @@ class TestBuildInparamsDict:
             )
         ]
 
-        result = build_inparams_dict(parameters)
+        result = fdictBuildInparams(parameters)
 
         assert result['star.dSatXUVFrac'] == u.dex(u.dimensionless_unscaled)
 
 
 class TestBuildOutparamsDict:
-    """Tests for build_outparams_dict function."""
+    """Tests for fdictBuildOutparams function."""
 
     def test_builds_dict_from_outputs(self):
         """Test building outparams dictionary."""
@@ -182,7 +192,7 @@ class TestBuildOutparamsDict:
             OutputConfig(name='final.planet.Mass', units='Mearth'),
         ]
 
-        result = build_outparams_dict(outputs)
+        result = fdictBuildOutparams(outputs)
 
         assert 'final.star.Luminosity' in result
         assert 'final.planet.Mass' in result
@@ -191,7 +201,7 @@ class TestBuildOutparamsDict:
 
     def test_empty_outputs(self):
         """Test building dict from empty output list."""
-        result = build_outparams_dict([])
+        result = fdictBuildOutparams([])
         assert result == {}
 
     def test_handles_conversion_factor(self):
@@ -204,13 +214,13 @@ class TestBuildOutparamsDict:
             )
         ]
 
-        result = build_outparams_dict(outputs)
+        result = fdictBuildOutparams(outputs)
 
         assert result['final.earth.HeatFlow'] == u.W
 
 
 class TestBuildInparamsDictShared:
-    """Tests for build_inparams_dict with shared parameters."""
+    """Tests for fdictBuildInparams with shared parameters."""
 
     def test_expands_shared_parameter(self):
         """Test that shared param produces multiple dict entries."""
@@ -221,7 +231,7 @@ class TestBuildInparamsDictShared:
             ),
         ]
 
-        result = build_inparams_dict(parameters)
+        result = fdictBuildInparams(parameters)
 
         assert len(result) == 3
         assert 'planet1.dIceAlbedo' in result
@@ -242,7 +252,7 @@ class TestBuildInparamsDictShared:
             ),
         ]
 
-        result = build_inparams_dict(parameters)
+        result = fdictBuildInparams(parameters)
 
         assert len(result) == 3
         assert 'planet1.dIceAlbedo' in result
@@ -256,7 +266,7 @@ class TestBuildInparamsDictShared:
             ParameterConfig(name='star.dMass', bounds=(0.5, 1.5), units='Msun'),
         ]
 
-        result = build_inparams_dict(parameters)
+        result = fdictBuildInparams(parameters)
 
         assert len(result) == 1
         assert 'star.dMass' in result
