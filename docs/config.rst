@@ -139,6 +139,17 @@ Supported prior types:
   Appropriate for scale parameters that span orders of magnitude (e.g.,
   viscosity, initial volatile inventory). Bounds must be strictly positive.
 
+.. note::
+
+    The ``log_uniform`` prior adds a :math:`-\ln(x)` penalty to the objective
+    function. It does **not** reparameterize the search into log-space — the
+    optimizer still samples directly in the bounds you specify, and the
+    best-fit values written to the results file and ``*_maxlev.in`` files are
+    in the same linear space as the bounds. To optimize in log-space instead,
+    use ``dex()`` units (e.g., ``"units": "dex(dimensionless)"``), which
+    reparameterizes the parameter so that bounds and output are in
+    :math:`\log_{10}` space.
+
 When any parameter has a non-uniform prior, MaxLEV automatically optimizes the
 posterior (MAP) instead of the likelihood (MLE).
 
