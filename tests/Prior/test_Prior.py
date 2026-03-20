@@ -11,6 +11,7 @@ from maxlev.prior import (
     UniformPrior,
     GaussianPrior,
     AsymmetricGaussianPrior,
+    LogUniformPrior,
     PriorCollection,
     flistCreatePriors,
 )
@@ -86,6 +87,40 @@ class TestAsymmetricGaussianPrior:
             )
 
 
+class TestLogUniformPrior:
+    """Tests for LogUniformPrior."""
+
+    def test_positive_value_returns_negative_log(self):
+        """Log-uniform prior returns -ln(x) for positive values."""
+        prior = LogUniformPrior()
+        assert prior.fdLogPrior(1.0) == pytest.approx(0.0)
+        assert prior.fdLogPrior(np.e) == pytest.approx(-1.0)
+        assert prior.fdLogPrior(10.0) == pytest.approx(-np.log(10.0))
+
+    def test_zero_returns_negative_infinity(self):
+        """Log-uniform prior returns -inf at zero."""
+        prior = LogUniformPrior()
+        assert prior.fdLogPrior(0.0) == -np.inf
+
+    def test_negative_value_returns_negative_infinity(self):
+        """Log-uniform prior returns -inf for negative values."""
+        prior = LogUniformPrior()
+        assert prior.fdLogPrior(-1.0) == -np.inf
+
+    def test_small_positive_value(self):
+        """Log-uniform prior penalizes small values less than large ones."""
+        prior = LogUniformPrior()
+        assert prior.fdLogPrior(0.01) > prior.fdLogPrior(100.0)
+
+    def test_monotonically_decreasing(self):
+        """Log-prior decreases as value increases (favors smaller scales)."""
+        prior = LogUniformPrior()
+        daValues = [0.1, 1.0, 10.0, 100.0, 1000.0]
+        listLogPriors = [prior.fdLogPrior(dVal) for dVal in daValues]
+        for i in range(len(listLogPriors) - 1):
+            assert listLogPriors[i] > listLogPriors[i + 1]
+
+
 class TestPriorCollection:
     """Tests for PriorCollection."""
 
@@ -151,6 +186,11 @@ class TestCreatePriors:
             "std_lower": 0.1,
         }])
         assert isinstance(collection.listPriors[0], AsymmetricGaussianPrior)
+
+    def test_creates_log_uniform(self):
+        """Factory creates log-uniform prior from config dict."""
+        collection = flistCreatePriors([{"type": "log_uniform"}])
+        assert isinstance(collection.listPriors[0], LogUniformPrior)
 
     def test_unknown_type_raises(self):
         """Factory raises ValueError for unknown prior type."""

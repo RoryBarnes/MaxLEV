@@ -135,6 +135,9 @@ Supported prior types:
 - ``gaussian``: Normal distribution with ``mean`` and ``std``.
 - ``asymmetric_gaussian``: Asymmetric normal with ``mean``, ``std_upper``, and
   ``std_lower``.
+- ``log_uniform``: Log-uniform (Jeffreys) prior, :math:`p(x) \propto 1/x`.
+  Appropriate for scale parameters that span orders of magnitude (e.g.,
+  viscosity, initial volatile inventory). Bounds must be strictly positive.
 
 When any parameter has a non-uniform prior, MaxLEV automatically optimizes the
 posterior (MAP) instead of the likelihood (MLE).

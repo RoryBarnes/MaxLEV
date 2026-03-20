@@ -45,6 +45,19 @@ class AsymmetricGaussianPrior(PriorModel):
         return -0.5 * ((dValue - self.dMean) / dStd) ** 2
 
 
+class LogUniformPrior(PriorModel):
+    """Log-uniform (Jeffreys) prior: p(x) proportional to 1/x.
+
+    Appropriate for scale parameters that span orders of magnitude.
+    The parameter bounds must be strictly positive.
+    """
+
+    def fdLogPrior(self, dValue: float) -> float:
+        if dValue <= 0.0:
+            return -np.inf
+        return -np.log(dValue)
+
+
 class PriorCollection:
     """Container for per-parameter priors. Computes total log-prior."""
 
@@ -88,9 +101,12 @@ def flistCreatePriors(listPriorConfigs: list) -> PriorCollection:
                 dStdUpper=dictPrior["std_upper"],
                 dStdLower=dictPrior["std_lower"],
             ))
+        elif sType == "log_uniform":
+            listPriors.append(LogUniformPrior())
         else:
             raise ValueError(
                 f"Unknown prior type '{sType}'. "
-                f"Valid types: uniform, gaussian, asymmetric_gaussian"
+                f"Valid types: uniform, gaussian, asymmetric_gaussian, "
+                f"log_uniform"
             )
     return PriorCollection(listPriors)
