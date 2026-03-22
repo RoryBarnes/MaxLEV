@@ -45,6 +45,25 @@ class AsymmetricGaussianPrior(PriorModel):
         return -0.5 * ((dValue - self.dMean) / dStd) ** 2
 
 
+class EmpiricalPrior(PriorModel):
+    """Empirical prior from samples file, evaluated via Gaussian KDE."""
+
+    def __init__(self, sFilePath: str, tBounds: tuple = None,
+                 dScaleFactor: float = 1.0):
+        from scipy.stats import gaussian_kde
+        daSamples = np.loadtxt(sFilePath) * dScaleFactor
+        if tBounds is not None:
+            daSamples = daSamples[(daSamples >= tBounds[0])
+                                 & (daSamples <= tBounds[1])]
+        self._kde = gaussian_kde(daSamples)
+
+    def fdLogPrior(self, dValue: float) -> float:
+        dDensity = float(self._kde(dValue)[0])
+        if dDensity <= 0.0:
+            return -np.inf
+        return np.log(dDensity)
+
+
 class LogUniformPrior(PriorModel):
     """Log-uniform (Jeffreys) prior: p(x) proportional to 1/x.
 
@@ -103,10 +122,16 @@ def flistCreatePriors(listPriorConfigs: list) -> PriorCollection:
             ))
         elif sType == "log_uniform":
             listPriors.append(LogUniformPrior())
+        elif sType == "empirical":
+            listPriors.append(EmpiricalPrior(
+                sFilePath=dictPrior["samples_file"],
+                tBounds=tuple(dictPrior["bounds"]) if "bounds" in dictPrior else None,
+                dScaleFactor=dictPrior.get("scale_factor", 1.0),
+            ))
         else:
             raise ValueError(
                 f"Unknown prior type '{sType}'. "
                 f"Valid types: uniform, gaussian, asymmetric_gaussian, "
-                f"log_uniform"
+                f"log_uniform, empirical"
             )
     return PriorCollection(listPriors)

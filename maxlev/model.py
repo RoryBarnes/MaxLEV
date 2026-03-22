@@ -63,7 +63,8 @@ class MaxLEVModel:
     def _fnInitVplanetModel(self, config) -> None:
         """Build VplanetModel with input/output parameter dicts."""
         dictInparams = fdictBuildInparams(config.parameters)
-        dictOutparams = fdictBuildOutparams(config.outputs)
+        listSortedOutputs = sorted(config.outputs, key=lambda x: x.name)
+        dictOutparams = fdictBuildOutparams(listSortedOutputs)
         self.vpm = vpi.VplanetModel(
             dictInparams,
             inpath=config.vplanet.get('inpath', '.'),
