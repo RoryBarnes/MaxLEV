@@ -9,7 +9,7 @@ Prerequisites
 - Python 3.9 or higher
 - ``vplanet`` and ``vplanet_inference``
 - ``numpy``
-- ``scipy``
+- ``scipy`` (1.12 or later)
 - ``astropy``
 
 Installing from Source

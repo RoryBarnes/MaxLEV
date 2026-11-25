@@ -16,6 +16,7 @@ Examples:
   maxlev config.json --validate   Validate config without running
   maxlev config.json --verbose    Enable verbose output
   maxlev config.json --workers 4  Use 4 parallel workers
+  maxlev config.json --resume     Continue an interrupted run
         """
     )
     _fnAddArguments(parser)
@@ -38,6 +39,11 @@ def _fnAddArguments(parser):
                         help='Override output directory')
     parser.add_argument('--workers', type=int, default=None,
                         help='Override number of parallel workers')
+    parser.add_argument('--resume', nargs='?', const='', default=None,
+                        metavar='CHECKPOINT',
+                        help='Continue differential evolution from a '
+                             'checkpoint (default: the configured '
+                             'checkpoint_file)')
 
 
 def main():
@@ -101,6 +107,21 @@ def _fnApplyOverrides(args, config):
         if 'de_settings' not in config.optimizer:
             config.optimizer['de_settings'] = {}
         config.optimizer['de_settings']['workers'] = args.workers
+    _fnApplyCheckpointSettings(args, config)
+
+
+def _fnApplyCheckpointSettings(args, config):
+    """Set the checkpoint path (default <name>_checkpoint.json) and resume."""
+    config.optimizer.setdefault('checkpoint_file',
+                                f"{config.name}_checkpoint.json")
+    if args.resume is None:
+        return
+    sResumePath = args.resume or config.optimizer['checkpoint_file']
+    if not sResumePath:
+        print("Error: --resume needs a checkpoint path because "
+              "checkpoint_file is disabled in the configuration")
+        sys.exit(1)
+    config.optimizer['resume_file'] = sResumePath
 
 
 def _fnValidateConfig(config, bValidateOnly):
@@ -136,6 +157,7 @@ def _fnRunOptimization(config):
     from .observables import ObservableComputer
     from .model import MaxLEVModel, AllSimulationsFailedError
     from .optimizer import Optimizer
+    from .checkpoint import CheckpointError
     from .prior import flistCreatePriors
 
     model, priorCollection = _fInitializeModel(config)
@@ -150,6 +172,9 @@ def _fnRunOptimization(config):
         )
     except AllSimulationsFailedError as e:
         _fnReportAbortedOptimization(e)
+        sys.exit(1)
+    except CheckpointError as e:
+        print(f"\nCheckpoint error: {e}")
         sys.exit(1)
 
     if dBestValue >= model.dFailurePenalty:

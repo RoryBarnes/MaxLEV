@@ -295,6 +295,10 @@ Common options:
 - ``maxiter``: Maximum number of iterations
 - ``x0``: Optional initial guess as a list of parameter values. If not
   specified, local optimizers start from the center of the parameter bounds.
+- ``checkpoint_file``: Path of the differential-evolution checkpoint, written
+  after every generation (default: ``<name>_checkpoint.json``, where ``<name>``
+  is the configuration's ``name``). Set it to ``null`` to disable
+  checkpoints. See :ref:`resuming`.
 
 Supported algorithms:
 
@@ -334,6 +338,12 @@ Differential Evolution Settings
 
     The ``polish`` option should be set to ``false`` for differential evolution
     to ensure the final solution respects parameter bounds.
+
+.. note::
+
+    When a run resumes from a checkpoint (``--resume``), the population size
+    comes from the checkpoint and ``popsize`` is ignored; ``maxiter`` counts
+    generations completed before the interruption.
 
 Nelder-Mead Settings
 ^^^^^^^^^^^^^^^^^^^^
