@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install numpy scipy astropy matplotlib
+          python -m pip install numpy "scipy>=1.12" astropy matplotlib
           python -m pip install vplanet
           python -m pip install git+https://github.com/jbirky/vplanet_inference.git
           python -m pip install pytest pytest-cov

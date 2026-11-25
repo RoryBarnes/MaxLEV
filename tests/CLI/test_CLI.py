@@ -261,3 +261,77 @@ class TestFailureReporting:
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+
+
+class TestResumeOption:
+    """Tests for the --resume option and checkpoint settings."""
+
+    @staticmethod
+    def fnApplyCheckpointArguments(listArguments, dictOptimizer):
+        """Parse arguments and apply checkpoint settings to a mock config."""
+        from maxlev.cli import _fnApplyCheckpointSettings
+        config = MagicMock()
+        config.name = 'venusFit'
+        config.optimizer = dictOptimizer
+        with patch('sys.argv', ['maxlev', 'config.json'] + listArguments):
+            _fnApplyCheckpointSettings(fParseArgs(), config)
+        return config.optimizer
+
+    def test_resume_defaults_to_none(self):
+        """Test that --resume is off unless given."""
+        with patch('sys.argv', ['maxlev', 'config.json']):
+            assert fParseArgs().resume is None
+
+    def test_resume_without_path(self):
+        """Test that a bare --resume parses to an empty path."""
+        with patch('sys.argv', ['maxlev', 'config.json', '--resume']):
+            assert fParseArgs().resume == ''
+
+    def test_resume_with_path(self):
+        """Test that --resume accepts a checkpoint path."""
+        with patch('sys.argv', ['maxlev', 'config.json', '--resume', 'a.json']):
+            assert fParseArgs().resume == 'a.json'
+
+    def test_default_checkpoint_named_after_config(self):
+        """Test that the checkpoint defaults to <name>_checkpoint.json."""
+        dictOptimizer = self.fnApplyCheckpointArguments([], {})
+        assert dictOptimizer['checkpoint_file'] == 'venusFit_checkpoint.json'
+        assert 'resume_file' not in dictOptimizer
+
+    def test_configured_checkpoint_kept(self):
+        """Test that a configured checkpoint_file is not replaced."""
+        dictOptimizer = self.fnApplyCheckpointArguments(
+            [], {'checkpoint_file': 'mine.json'})
+        assert dictOptimizer['checkpoint_file'] == 'mine.json'
+
+    def test_bare_resume_uses_checkpoint_file(self):
+        """Test that --resume alone reads the configured checkpoint."""
+        dictOptimizer = self.fnApplyCheckpointArguments(['--resume'], {})
+        assert dictOptimizer['resume_file'] == 'venusFit_checkpoint.json'
+
+    def test_resume_path_overrides_checkpoint_file(self):
+        """Test that an explicit --resume path is used."""
+        dictOptimizer = self.fnApplyCheckpointArguments(
+            ['--resume', 'old.json'], {})
+        assert dictOptimizer['resume_file'] == 'old.json'
+        assert dictOptimizer['checkpoint_file'] == 'venusFit_checkpoint.json'
+
+    def test_bare_resume_with_disabled_checkpoint_exits(self):
+        """Test a clear exit when there is no checkpoint to resume."""
+        with pytest.raises(SystemExit) as exc_info:
+            self.fnApplyCheckpointArguments(
+                ['--resume'], {'checkpoint_file': None})
+        assert exc_info.value.code == 1
+
+    def test_checkpoint_error_exits_cleanly(self, capsys):
+        """Test that a checkpoint problem ends the run with a message."""
+        from maxlev.checkpoint import CheckpointError
+        from maxlev.cli import _fnRunOptimization
+        with patch('maxlev.cli._fInitializeModel',
+                   return_value=(MagicMock(), MagicMock())), \
+                patch('maxlev.optimizer.Optimizer.optimize',
+                      side_effect=CheckpointError('stale checkpoint')):
+            with pytest.raises(SystemExit) as exc_info:
+                _fnRunOptimization(MagicMock())
+        assert exc_info.value.code == 1
+        assert 'stale checkpoint' in capsys.readouterr().out
